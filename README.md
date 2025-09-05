@@ -1,47 +1,80 @@
-## Zig Project Template
-
 <div align="center">
   <picture>
-    <img alt="Zig Logo" src="docs/assets/logo/zero.svg" height="35%" width="35%">
+    <img alt="Element 0 Logo" src="logo.svg" height="30%" width="30%">
   </picture>
-</div>
 <br>
 
-[![Tests](https://img.shields.io/github/actions/workflow/status/habedi/template-zig-project/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/template-zig-project/actions/workflows/tests.yml)
-[![Lints](https://img.shields.io/github/actions/workflow/status/habedi/template-zig-project/lints.yml?label=lints&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/template-zig-project/actions/workflows/lints.yml)
-[![Code Coverage](https://img.shields.io/codecov/c/github/habedi/template-zig-project?label=coverage&style=flat&labelColor=282c34&logo=codecov)](https://codecov.io/gh/habedi/template-zig-project)
-[![CodeFactor](https://img.shields.io/codefactor/grade/github/habedi/template-zig-project?label=code%20quality&style=flat&labelColor=282c34&logo=codefactor)](https://www.codefactor.io/repository/github/habedi/template-zig-project)
-[![Docs](https://img.shields.io/badge/docs-latest-007ec6?label=docs&style=flat&labelColor=282c34&logo=readthedocs)](docs)
-[![License](https://img.shields.io/badge/license-MIT-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/habedi/template-zig-project/blob/main/LICENSE)
-[![Release](https://img.shields.io/github/release/habedi/template-zig-project.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/template-zig-project/releases/latest)
+<h2>Element 0</h2>
 
-This is a project template for Zig projects.
-It provides a minimalistic project structure with pre-configured GitHub Actions, Makefile, and a few useful
-configuration files.
-I share it here in case it might be useful to others.
+[![Tests](https://img.shields.io/github/actions/workflow/status/habedi/element-0/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/actions/workflows/tests.yml)
+[![CodeFactor](https://img.shields.io/codefactor/grade/github/habedi/element-0?label=code%20quality&style=flat&labelColor=282c34&logo=codefactor)](https://www.codefactor.io/repository/github/habedi/element-0)
+[![Zig Version](https://img.shields.io/badge/Zig-0.14.1-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
+[![Docs](https://img.shields.io/github/v/tag/habedi/element-0?label=docs&color=blue&style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
+[![Examples](https://img.shields.io/github/v/tag/habedi/element-0?label=examples&color=green&style=flat&labelColor=282c34&logo=zig)](https://github.com/habedi/element-0/tree/main/examples)
+[![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
+[![License](https://img.shields.io/badge/license-Apache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/habedi/element-0/blob/main/LICENSE)
+
+A small embeddable Lisp for the Zig ecosystem λ
+
+</div>
+
+---
+
+Element 0 is a Lisp dialect implemented in the Zig programming language.
+It is inspired by Scheme and aims to be compliant with
+the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to a large extent.
+The main goal of Element 0 is to provide a lightweight, embeddable Lisp interpreter (named `elz`) that can be easily
+integrated into Zig applications as a scripting engine, as well as a standalone interactive read-eval-print-loop (REPL).
+Additionally, it comes with a foreign function interface (FFI) API that lets you call Zig procedures from Lisp code and
+vice versa.
 
 ### Features
 
-- Minimalistic project structure
-- Pre-configured GitHub Actions for linting and testing
-- Makefile for managing the development workflow and tasks like code formatting, testing, linting, etc.
-- GitHub badges for tests, code quality and coverage, documentation, etc.
-- [Code of Conduct](CODE_OF_CONDUCT.md) and [Contributing Guidelines](CONTRIBUTING.md)
+* **R5RS-ish**: Aims for a good level of R5RS compliance.
+* **Embeddable**: Easy to integrate into Zig projects as Zig library.
+* **FFI**: Allows calling Zig functions from Lisp and vice versa.
+* **Garbage Collection**: Uses the Boehm-Demers-Weiser garbage collector.
+* **REPL**: Comes with REPL for scripting and development.
+
+See the [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features.
+
+> [!IMPORTANT]
+> Element 0 is in early development, so bugs and breaking changes are expected.
+> Please use the [issues page](https://github.com/habedi/element-0/issues) to report bugs or request features.
+
+---
 
 ### Getting Started
 
-Check out the [Makefile](Makefile) for available commands to manage the development workflow of the project.
+Element 0 is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
 
-```shell
-# Install system and development dependencies (for Debian-based systems)
-sudo apt-get install make
-make install-deps
-```
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/habedi/element-0.git
+   cd element-0
+   ```
+2. Build and run the REPL:
+   ```sh
+   zig build repl
+   ```
 
-```shell
-# See all available commands and their descriptions
-make help
-```
+-----
+
+### Documentation
+
+You can find the full API documentation for the latest release of Element 0 [here](https://habedi.github.io/element-0/).
+
+Alternatively, you can use the `make docs` command to generate the API documentation for the current version of
+Element 0 from the source code.
+This will generate HTML documentation in the `docs/api` directory, which you can serve locally with `make serve-docs`
+and view in your web browser at [http://localhost:8000](http://localhost:8000).
+
+### Examples
+
+Check out the [examples](examples/) directory for various usage examples,
+including both Element 0 code and Zig FFI examples.
+
+---
 
 ### Contributing
 
@@ -49,4 +82,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to make a contribution
 
 ### License
 
-This project is licensed under the MIT License ([LICENSE](LICENSE) or https://opensource.org/licenses/MIT)
+Element 0 is licensed under the Apache License, Version 2.0 (see [LICENSE](LICENSE)).
+
+### Acknowledgements
+
+* The logo is made by [Conrad Barski, M.D.](https://www.lisperati.com/logo.html) with a few changes.
+* This project uses [linenoise](https://github.com/antirez/linenoise) and [bdwgc](https://github.com/bdwgc/bdwgc) C
+  libraries.
+* This project uses [Chilli](https://github.com/habedi/chilli) CLI framework.

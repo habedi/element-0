@@ -1,0 +1,2 @@
+;;; This example demonstrates the usage of `let` for creating local bindings.
+(let ((x 10) (y 20)) (+ x y))

@@ -1,0 +1,15 @@
+;;; This example implements a tail-recursive function `take`
+;;; to get the first N elements of a list. It showcases a
+;;; combination of features.
+
+(define (take n lst)
+  (letrec ((take-iter (lambda (count l acc)
+                       (if (or (= count 0) (null? l))
+                           (reverse acc)
+                           (take-iter (- count 1)
+                                      (cdr l)
+                                      (cons (car l) acc))))))
+    (take-iter n lst '())))
+
+;; This should evaluate to the list (a b c).
+(take 3 '(a b c d e))

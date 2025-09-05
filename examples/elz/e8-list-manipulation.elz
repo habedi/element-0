@@ -1,0 +1,4 @@
+;;; This example demonstrates list manipulation.
+(define my-list (cons 1 (cons 2 (cons 3 nil))))
+(car my-list)
+(cdr my-list)

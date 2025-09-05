@@ -1,0 +1,141 @@
+//! This module implements primitive procedures for type predicates and equality.
+
+const std = @import("std");
+const core = @import("../core.zig");
+const Value = core.Value;
+const ElzError = @import("../errors.zig").ElzError;
+
+/// Checks if a value is a proper list.
+/// A proper list is a `nil` value or a pair whose `cdr` is a proper list.
+///
+/// - `v`: The value to check.
+/// - `return`: `true` if the value is a proper list, otherwise `false`.
+fn isProperList(v: Value) bool {
+    var cur = v;
+    while (cur == .pair) {
+        cur = cur.pair.cdr;
+    }
+    return cur == .nil;
+}
+
+/// Checks if two values are equal.
+/// This function performs a deep equality check for pairs.
+///
+/// - `a`: The first value.
+/// - `b`: The second value.
+/// - `return`: `true` if the values are equal, otherwise `false`.
+fn equal_values(a: Value, b: Value) bool {
+    switch (a) {
+        .nil => return b == .nil,
+        .boolean => |av| return switch (b) {
+            .boolean => |bv| av == bv,
+            else => false,
+        },
+        .number => |av| return switch (b) {
+            .number => |bv| av == bv,
+            else => false,
+        },
+        .character => |av| return switch (b) {
+            .character => |bv| av == bv,
+            else => false,
+        },
+        .string => |av| return switch (b) {
+            .string => |bv| std.mem.eql(u8, av, bv),
+            else => false,
+        },
+        .symbol => |av| return switch (b) {
+            .symbol => |bv| std.mem.eql(u8, av, bv),
+            else => false,
+        },
+        .closure => |av| return switch (b) {
+            .closure => |bv| av == bv,
+            else => false,
+        },
+        .procedure => |av| return switch (b) {
+            .procedure => |bv| av == bv,
+            else => false,
+        },
+        .foreign_procedure => |av| return switch (b) {
+            .foreign_procedure => |bv| av == bv,
+            else => false,
+        },
+        .opaque_pointer => |av| return switch (b) {
+            .opaque_pointer => |bv| av == bv,
+            else => false,
+        },
+        .pair => |pa| return switch (b) {
+            .pair => |pb| equal_values(pa.car, pb.car) and equal_values(pa.cdr, pb.cdr),
+            else => false,
+        },
+    }
+}
+
+/// The `null?` primitive procedure.
+/// Checks if a value is `nil`.
+///
+/// - `args`: A list containing a single value.
+/// - `return`: A boolean value.
+pub fn is_null(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = args.items[0] == .nil };
+}
+
+/// The `boolean?` primitive procedure.
+/// Checks if a value is a boolean.
+///
+/// - `args`: A list containing a single value.
+/// - `return`: A boolean value.
+pub fn is_boolean(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = args.items[0] == .boolean };
+}
+
+/// The `symbol?` primitive procedure.
+/// Checks if a value is a symbol.
+///
+/// - `args`: A list containing a single value.
+/// - `return`: A boolean value.
+pub fn is_symbol(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = args.items[0] == .symbol };
+}
+
+/// The `number?` primitive procedure.
+/// Checks if a value is a number.
+///
+/// - `args`: A list containing a single value.
+/// - `return`: A boolean value.
+pub fn is_number(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = args.items[0] == .number };
+}
+
+/// The `list?` primitive procedure.
+/// Checks if a value is a proper list.
+///
+/// - `args`: A list containing a single value.
+/// - `return`: A boolean value.
+pub fn is_list(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = isProperList(args.items[0]) };
+}
+
+/// The `eq?` primitive procedure.
+/// Checks if two values are equal.
+///
+/// - `args`: A list containing two values.
+/// - `return`: A boolean value.
+pub fn is_eq(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = equal_values(args.items[0], args.items[1]) };
+}
+
+/// The `equal?` primitive procedure.
+/// Checks if two values are equal.
+///
+/// - `args`: A list containing two values.
+/// - `return`: A boolean value.
+pub fn is_equal(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = equal_values(args.items[0], args.items[1]) };
+}

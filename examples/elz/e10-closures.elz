@@ -1,0 +1,15 @@
+;;; This example demonstrates closures and lexical scope.
+;;; `make-adder` returns a new procedure that captures the `num` variable.
+
+(define (make-adder num)
+  (lambda (x)
+    (+ x num)))
+
+(define add5 (make-adder 5))
+(define add10 (make-adder 10))
+
+;; This should evaluate to 8.
+(add5 3)
+
+;; This should evaluate to 13.
+(add10 3)

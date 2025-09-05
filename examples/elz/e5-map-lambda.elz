@@ -1,0 +1,5 @@
+(letrec ((map (lambda (f l)
+               (if (null? l)
+                   '()
+                   (cons (f (car l)) (map f (cdr l)))))))
+  (map (lambda (x) (* x x)) '(1 2 3 4 5)))

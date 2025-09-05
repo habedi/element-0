@@ -1,0 +1,3 @@
+;;; This example demonstrates the usage of `if` expressions.
+(if (> 10 5) "10 is greater than 5" "10 is not greater than 5")
+(if (< 10 5) "10 is less than 5" "10 is not less than 5")
