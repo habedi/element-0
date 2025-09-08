@@ -8,10 +8,10 @@
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/habedi/element-0/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/actions/workflows/tests.yml)
 [![Zig Version](https://img.shields.io/badge/Zig-0.14.1-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
-[![Docs](https://img.shields.io/badge/docs-view-blue?style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
-[![Examples](https://img.shields.io/badge/examples-view-green?style=flat&labelColor=282c34&logo=zig)](https://github.com/habedi/element-0/tree/main/examples)
 [![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
+[![Docs](https://img.shields.io/badge/docs-view-blue?style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/habedi/element-0/blob/main/LICENSE)
+[![Examples](https://img.shields.io/badge/examples-view-green?style=flat&labelColor=282c34&logo=zig)](https://github.com/habedi/element-0/tree/main/examples)
 
 A small embeddable Lisp for the Zig ecosystem λ
 
@@ -21,19 +21,18 @@ A small embeddable Lisp for the Zig ecosystem λ
 
 Element 0 is a Lisp dialect implemented in the Zig programming language.
 It is inspired by Scheme and aims to be compliant with
-the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to a large extent.
-The main goal of Element 0 is to provide a lightweight, embeddable Lisp interpreter (named `elz`) that can be easily
+the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to good degree.
+The main goal of this project is to provide a lightweight, embeddable Lisp interpreter (named `elz`) that can be easily
 integrated into Zig applications as a scripting engine, as well as a standalone interactive read-eval-print-loop (REPL).
-Additionally, it comes with a foreign function interface (FFI) API that lets you call Zig procedures from Lisp code and
+Additionally, it comes with a foreign function interface (FFI) API that lets you call Zig procedures from Element 0 and
 vice versa.
 
 ### Features
 
-* **R5RS-ish**: Aims for a good level of R5RS compliance.
-* **Embeddable**: Easy to integrate into Zig projects as Zig library.
-* **FFI**: Allows calling Zig functions from Lisp and vice versa.
-* **Garbage Collection**: Uses the Boehm-Demers-Weiser garbage collector.
-* **REPL**: Comes with REPL for scripting and development.
+* A good level of R5RS compliance with a sizable standard library.
+* Easy to integrate into Zig projects as a lightweight and fast scripting engine.
+* Easy to extend with Zig functions via FFI.
+* Comes with REPL for scripting and development.
 
 See the [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features.
 

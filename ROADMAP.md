@@ -1,6 +1,6 @@
 ## Feature Roadmap
 
-This document includes the roadmap for the project.
+This document includes the roadmap for the Element 0 programming language.
 It outlines the features to be implemented and their current status.
 
 > [!IMPORTANT]
@@ -11,12 +11,12 @@ It outlines the features to be implemented and their current status.
 * **Embedding API**:
     * [x] An `Interpreter` struct that manages all state.
     * [x] `init` and `deinit` functions for lifecycle management.
-    * [x] `evalString` to execute Lisp code from Zig.
-    * [x] `setGlobal` to define Lisp variables from Zig values.
+    * [x] `evalString` to execute Element 0 code from Zig.
+    * [x] `setGlobal` to define Element 0 variables from Zig values.
 * **FFI**:
-    * [x] Support for variadic functions. Zig functions can accept a variable number of Lisp arguments.
-    * [x] Graceful error propagation from Zig functions to the Lisp environment.
-    * [x] Support for opaque pointers. Lisp can hold references to Zig data structures.
+    * [x] Support for variadic functions. Zig functions can accept a variable number of Element 0 arguments.
+    * [x] Graceful error propagation from Zig functions to the Element 0 environment.
+    * [x] Support for opaque pointers. Element 0 can hold references to Zig data structures.
 
 ### 2. R5RS Compliance
 
