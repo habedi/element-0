@@ -9,8 +9,8 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/habedi/element-0/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/actions/workflows/tests.yml)
 [![CodeFactor](https://img.shields.io/codefactor/grade/github/habedi/element-0?label=code%20quality&style=flat&labelColor=282c34&logo=codefactor)](https://www.codefactor.io/repository/github/habedi/element-0)
 [![Zig Version](https://img.shields.io/badge/Zig-0.14.1-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
-[![Docs](https://img.shields.io/github/v/tag/habedi/element-0?label=docs&color=blue&style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
-[![Examples](https://img.shields.io/github/v/tag/habedi/element-0?label=examples&color=green&style=flat&labelColor=282c34&logo=zig)](https://github.com/habedi/element-0/tree/main/examples)
+[![Docs](https://img.shields.io/badge/docs-view-blue?style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
+[![Examples](https://img.shields.io/badge/examples-view-green?style=flat&labelColor=282c34&logo=zig)](https://github.com/habedi/element-0/tree/main/examples)
 [![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
 [![License](https://img.shields.io/badge/license-Apache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/habedi/element-0/blob/main/LICENSE)
 
