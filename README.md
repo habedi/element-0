@@ -1,6 +1,6 @@
 <div align="center">
   <picture>
-    <img alt="Element 0 Logo" src="logo.svg" height="30%" width="30%">
+    <img alt="Element 0 Logo" src="logo.svg" height="35%" width="35%">
   </picture>
 <br>
 
@@ -21,15 +21,17 @@ A small embeddable Lisp for the Zig ecosystem λ
 
 Element 0 is a Lisp dialect implemented in the Zig programming language.
 It is inspired by Scheme and aims to be compliant with
-the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to good degree.
-The main goal of this project is to provide a lightweight, embeddable Lisp interpreter (named `elz`) that can be easily
-integrated into Zig applications as a scripting engine, as well as a standalone interactive read-eval-print-loop (REPL).
+the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to a good degree, but not limited to it.
+
+This project provides a lightweight, embeddable interpreter (named `elz`) for Element 0.
+Elz can be easily integrated into Zig applications as a scripting engine, as well as a standalone interactive
+read-eval-print-loop (REPL).
 Additionally, it comes with a foreign function interface (FFI) API that lets you call Zig procedures from Element 0 and
 vice versa.
 
 ### Features
 
-* A good level of R5RS compliance with a sizable standard library.
+* A good level of R5RS compliance with a sizable standard library (see [std.elz](src/stdlib/std.elz)).
 * Easy to integrate into Zig projects as a lightweight and fast scripting engine.
 * Easy to extend with Zig functions via FFI.
 * Comes with REPL for scripting and development.
@@ -76,7 +78,8 @@ including both Element 0 code and Zig FFI examples.
 
 ### Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to make a contribution.
+Contributions are always welcome!
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to make a contribution.
 
 ### License
 
@@ -87,4 +90,4 @@ Element 0 is licensed under the Apache License, Version 2.0 (see [LICENSE](LICEN
 * The logo is made by [Conrad Barski, M.D.](https://www.lisperati.com/logo.html) with a few changes.
 * This project uses [linenoise](https://github.com/antirez/linenoise) and [bdwgc](https://github.com/bdwgc/bdwgc) C
   libraries.
-* This project uses [Chilli](https://github.com/habedi/chilli) CLI framework.
+* This project uses the [Chilli](https://github.com/habedi/chilli) CLI framework.
