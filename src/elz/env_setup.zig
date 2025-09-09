@@ -26,6 +26,8 @@ pub fn populate_math(env: *core.Environment) !void {
     try env.set("cos", core.Value{ .procedure = math.cos });
     try env.set("tan", core.Value{ .procedure = math.tan });
     try env.set("log", core.Value{ .procedure = math.log });
+    try env.set("max", core.Value{ .procedure = math.max });
+    try env.set("min", core.Value{ .procedure = math.min });
 }
 
 /// Populates the environment with list manipulation procedures.

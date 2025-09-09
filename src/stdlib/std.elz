@@ -47,20 +47,6 @@
       (- x)
       x))
 
-;; (max x y)
-;; Returns the maximum of two numbers.
-(define (max x y)
-  (if (> x y)
-      x
-      y))
-
-;; (min x y)
-;; Returns the minimum of two numbers.
-(define (min x y)
-  (if (< x y)
-      x
-      y))
-
 ;; (square x)
 ;; Returns the square of a number.
 (define (square x)

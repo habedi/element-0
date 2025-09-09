@@ -165,3 +165,49 @@ pub fn log(_: *core.Environment, args: core.ValueList) !Value {
     const x = args.items[0].number;
     return Value{ .number = std.math.log(f64, std.math.e, x) };
 }
+
+/// The `max` primitive procedure.
+/// Returns the maximum of a list of numbers.
+///
+/// - `args`: A list of numbers.
+/// - `return`: The maximum number in the list.
+pub fn max(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len == 0) return ElzError.WrongArgumentCount;
+    var max_val: f64 = -std.math.inf(f64);
+    if (args.items[0] == .number) {
+        max_val = args.items[0].number;
+    } else {
+        return ElzError.InvalidArgument;
+    }
+
+    for (args.items[1..]) |arg| {
+        if (arg != .number) return ElzError.InvalidArgument;
+        if (arg.number > max_val) {
+            max_val = arg.number;
+        }
+    }
+    return Value{ .number = max_val };
+}
+
+/// The `min` primitive procedure.
+/// Returns the minimum of a list of numbers.
+///
+/// - `args`: A list of numbers.
+/// - `return`: The minimum number in the list.
+pub fn min(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len == 0) return ElzError.WrongArgumentCount;
+    var min_val: f64 = std.math.inf(f64);
+    if (args.items[0] == .number) {
+        min_val = args.items[0].number;
+    } else {
+        return ElzError.InvalidArgument;
+    }
+
+    for (args.items[1..]) |arg| {
+        if (arg != .number) return ElzError.InvalidArgument;
+        if (arg.number < min_val) {
+            min_val = arg.number;
+        }
+    }
+    return Value{ .number = min_val };
+}
