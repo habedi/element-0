@@ -17,6 +17,8 @@ pub const SandboxFlags = struct {
     enable_lists: bool = true,
     /// Enables type predicate procedures like `null?`, `boolean?`, `number?`.
     enable_predicates: bool = true,
+    /// Enables I/O procedures like `display`, `load`, which may have side effects.
+    enable_io: bool = true,
 };
 
 /// The Element 0 interpreter.
@@ -27,9 +29,6 @@ pub const Interpreter = struct {
     root_env: *core.Environment,
 
     /// Initializes a new interpreter.
-    ///
-    /// - `flags`: Sandbox flags to control which primitives are enabled.
-    /// - `return`: A new `Interpreter` instance.
     pub fn init(flags: SandboxFlags) !Interpreter {
         const allocator = gc.allocator;
         gc.init();
@@ -37,9 +36,6 @@ pub const Interpreter = struct {
 
         // Define 'nil' as a global constant
         try root_env.set("nil", core.Value.nil);
-        //try root_env.set("[]", core.Value.nil); // Alias for 'nil'
-        //try root_env.set("#t", core.Value{ .boolean = true });
-        //try root_env.set("#f", core.Value{ .boolean = false });
 
         if (flags.enable_math) {
             try env_setup.populate_math(root_env);
@@ -49,6 +45,9 @@ pub const Interpreter = struct {
         }
         if (flags.enable_predicates) {
             try env_setup.populate_predicates(root_env);
+        }
+        if (flags.enable_io) {
+            try env_setup.populate_io(root_env);
         }
         try env_setup.populate_control(root_env);
 
@@ -67,11 +66,6 @@ pub const Interpreter = struct {
     }
 
     /// Evaluates a string of Element 0 source code.
-    ///
-    /// - `self`: A pointer to the interpreter instance.
-    /// - `source`: The source code to evaluate.
-    /// - `fuel`: A pointer to the execution fuel counter.
-    /// - `return`: The result of the evaluation.
     pub fn evalString(self: *Interpreter, source: []const u8, fuel: *u64) !core.Value {
         const ast = try parser.read(source, self.allocator);
         return eval.eval(&ast, self.root_env, fuel);

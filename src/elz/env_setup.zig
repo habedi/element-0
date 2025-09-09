@@ -7,6 +7,7 @@ const lists = @import("./primitives/lists.zig");
 const math = @import("./primitives/math.zig");
 const predicates = @import("./primitives/predicates.zig");
 const control = @import("./primitives/control.zig");
+const io = @import("./primitives/io.zig");
 
 /// Populates the environment with mathematical procedures.
 pub fn populate_math(env: *core.Environment) !void {
@@ -51,12 +52,21 @@ pub fn populate_control(env: *core.Environment) !void {
     try env.set("apply", core.Value{ .procedure = control.apply });
 }
 
+/// Populates the environment with I/O procedures.
+pub fn populate_io(env: *core.Environment) !void {
+    try env.set("display", core.Value{ .procedure = io.display });
+    try env.set("write", core.Value{ .procedure = io.write_proc });
+    try env.set("newline", core.Value{ .procedure = io.newline });
+    try env.set("load", core.Value{ .procedure = io.load });
+}
+
 /// Populates the environment with all global procedures.
 pub fn populate_globals(env: *core.Environment) !void {
     try populate_math(env);
     try populate_lists(env);
     try populate_predicates(env);
     try populate_control(env);
+    try populate_io(env);
 }
 
 /// Defines a foreign function in the given environment.
