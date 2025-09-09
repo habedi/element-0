@@ -13,51 +13,43 @@ pub fn build(b: *std.Build) void {
     });
     {
         var cflags: std.ArrayListUnmanaged([]const u8) = .empty;
+        var src_files: std.ArrayListUnmanaged([]const u8) = .empty;
         defer cflags.deinit(b.allocator);
+        defer src_files.deinit(b.allocator);
 
-        // Always enable NO_EXECUTE_PERMISSION
-        cflags.append(b.allocator, "-DNO_EXECUTE_PERMISSION") catch unreachable;
+        cflags.appendSlice(b.allocator, &.{
+            "-DNO_EXECUTE_PERMISSION",
+            "-DGC_THREADS", // Enable threading support
+            "-DGC_BUILTIN_ATOMIC", // Use the compiler's built-in atomic functions
+        }) catch unreachable;
 
-        // For release builds, we must define NDEBUG to disable the GC's
-        // verbose internal tracing and assertions.
         if (optimize != .Debug) {
-        cflags.append(b.allocator, "-DNDEBUG") catch unreachable;
-    }
-
-        const gc_debug_enabled = blk: {
-            const env_value = std.posix.getenv("GC_DEBUG") orelse break :blk false;
-            break :blk std.mem.eql(u8, env_value, "1") or std.mem.eql(u8, env_value, "true");
-        };
-
-        if (gc_debug_enabled) {
-            cflags.append(b.allocator, "-DGC_DEBUG") catch unreachable;
-            cflags.append(b.allocator, "-DGC_ASSERTIONS") catch unreachable;
+            cflags.append(b.allocator, "-DNDEBUG") catch unreachable;
         }
 
-        const libgc_srcs = &[_][]const u8{
-            "alloc.c",
-            "reclaim.c",
-            "allchblk.c",
-            "misc.c",
-            "mach_dep.c",
-            "os_dep.c",
-            "mark_rts.c",
-            "headers.c",
-            "mark.c",
-            "blacklst.c",
-            "finalize.c",
-            "new_hblk.c",
-            "dbg_mlc.c",
-            "malloc.c",
-            "dyn_load.c",
-            "typd_mlc.c",
-            "ptr_chck.c",
-            "mallocx.c",
-        };
+        // Add base GC source files
+        src_files.appendSlice(b.allocator, &.{
+            "alloc.c",    "reclaim.c", "allchblk.c", "misc.c",     "mach_dep.c", "os_dep.c",
+            "mark_rts.c", "headers.c", "mark.c",     "blacklst.c", "finalize.c", "new_hblk.c",
+            "dbg_mlc.c",  "malloc.c",  "dyn_load.c", "typd_mlc.c", "ptr_chck.c", "mallocx.c",
+        }) catch unreachable;
+
+        // Add platform-specific source files for threading
+        switch (target.result.os.tag) {
+            .windows => {
+                src_files.appendSlice(b.allocator, &.{ "win32_threads.c", "pthread_support.c" }) catch unreachable;
+            },
+            .macos => {
+                src_files.appendSlice(b.allocator, &.{ "darwin_stop_world.c", "pthread_support.c", "pthread_start.c" }) catch unreachable;
+            },
+            else => { // Assume other POSIX-like systems
+                src_files.appendSlice(b.allocator, &.{ "pthread_stop_world.c", "pthread_support.c", "pthread_start.c" }) catch unreachable;
+            },
+        }
 
         gc.linkLibC();
         gc.addIncludePath(b.path("external/bdwgc/include"));
-        for (libgc_srcs) |src| {
+        for (src_files.items) |src| {
             const src_path = b.fmt("external/bdwgc/{s}", .{src});
             gc.addCSourceFile(.{ .file = b.path(src_path), .flags = cflags.items });
         }
@@ -94,17 +86,11 @@ pub fn build(b: *std.Build) void {
         .root_module = repl_module,
     });
 
-    // --- Linenoise dependency ---
-    const linenoise_flags = &[_][]const u8{};
-    const linenoise_includes = "external/linenoise";
-    const linenoise_sources = &[_][]const u8{
-        "external/linenoise/linenoise.c",
-    };
-    repl_exe.addIncludePath(b.path(linenoise_includes));
-    repl_exe.addCSourceFiles(.{
-        .files = linenoise_sources,
-        .flags = linenoise_flags,
-    });
+    // --- Linenoise dependency (POSIX only) ---
+    if (target.result.os.tag != .windows) {
+        repl_exe.addIncludePath(b.path("external/linenoise"));
+        repl_exe.addCSourceFile(.{ .file = b.path("external/linenoise/linenoise.c") });
+    }
     repl_exe.linkSystemLibrary("c");
 
     // Add dependency on 'chilli' library
@@ -128,12 +114,6 @@ pub fn build(b: *std.Build) void {
         "src/lib.zig",
         "-femit-docs=" ++ doc_install_path,
     });
-
-    const mkdir_cmd = b.addSystemCommand(&[_][]const u8{
-        "mkdir", "-p", doc_install_path,
-    });
-    gen_docs_cmd.step.dependOn(&mkdir_cmd.step);
-
     docs_step.dependOn(&gen_docs_cmd.step);
 
     // --- Test Setup ---
