@@ -72,7 +72,14 @@ pub const Interpreter = struct {
 
     /// Evaluates a string of Element 0 source code.
     pub fn evalString(self: *Interpreter, source: []const u8, fuel: *u64) !core.Value {
-        const ast = try parser.read(source, self.allocator);
-        return eval.eval(&ast, self.root_env, fuel);
+        // Parse all forms in the source.
+        const forms = try parser.readAll(source, self.allocator);
+
+        // Evaluate each form in sequence; return the last result.
+        var result: core.Value = .unspecified;
+        for (forms.items) |form| {
+            result = try eval.eval(&form, self.root_env, fuel);
+        }
+        return result;
     }
 };
