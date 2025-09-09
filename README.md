@@ -13,7 +13,7 @@
 [![Zig Version](https://img.shields.io/badge/Zig-0.14.1-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
 [![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
 
-A small embeddable Lisp for the Zig ecosystem λ
+A small embeddable Lisp for the Zig ecosystem l
 
 </div>
 
@@ -23,7 +23,8 @@ Element 0 programming language is a new Lisp dialect inspired by Scheme and aims
 the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to a good degree, but not limited to it.
 
 This project provides an interpreter for the Element 0 language written in Zig.
-The interpreter is named Elz (pronounced like "el-zee") and can be integrated into Zig applications as a scripting engine.
+The interpreter is named Elz (pronounced like "el-zee") and can be integrated into Zig applications as a scripting
+engine.
 In addition, Elz comes with a read-eval-print loop (REPL) for interactive development and testing, and easily can be
 extended using Zig code using foreign function interface (FFI) or Element 0 code.
 
@@ -32,7 +33,7 @@ extended using Zig code using foreign function interface (FFI) or Element 0 code
 * A good level of R5RS compliance with a growing standard library (see [std.elz](src/stdlib/std.elz)).
 * Easy to integrate into Zig projects as a lightweight and fast scripting engine.
 * Easy to extend with Zig functions via FFI or writing Element 0 code.
-* Prepacked with a REPL, and module system, and a debugger.
+* Prepacked with a REPL for interactive development.
 
 See the [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features.
 
@@ -48,9 +49,10 @@ Element 0 is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/habedi/element-0.git
+   git clone [https://github.com/habedi/element-0.git](https://github.com/habedi/element-0.git)
    cd element-0
-   ```
+    ```
+
 2. Build and run the REPL:
    ```sh
    zig build repl
@@ -65,23 +67,23 @@ You can find the full API documentation for the latest release of Element 0 [her
 Alternatively, you can use the `make docs` command to generate the API documentation for the current version of
 Element 0 from the source code.
 This will generate HTML documentation in the `docs/api` directory, which you can serve locally with `make serve-docs`
-and view in your web browser at [http://localhost:8000](http://localhost:8000).
+and view in your web browser at [http://localhost:8000](https://www.google.com/search?q=http://localhost:8000).
 
 ### Examples
 
-Check out the [examples](examples/) directory for various usage examples,
+Check out the [examples](https://www.google.com/search?q=examples/) directory for various usage examples,
 including both Element 0 code and Zig FFI examples.
 
----
+-----
 
 ### Contributing
 
 Contributions are always welcome!
-Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to make a contribution.
+Please see [CONTRIBUTING.md](https://www.google.com/search?q=CONTRIBUTING.md) for details on how to make a contribution.
 
 ### License
 
-Element 0 is licensed under the Apache License, Version 2.0 (see [LICENSE](LICENSE)).
+Element 0 is licensed under the Apache License, Version 2.0 (see [LICENSE](https://www.google.com/search?q=LICENSE)).
 
 ### Acknowledgements
 
