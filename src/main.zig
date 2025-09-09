@@ -157,7 +157,7 @@ pub fn main() anyerror!void {
     try root_cmd.addFlag(.{
         .name = "file",
         .shortcut = 'f',
-        .description = "The file to evaluate",
+        .description = "The Element 0 source file to execute",
         .type = .String,
         .default_value = .{ .String = "" },
     });
