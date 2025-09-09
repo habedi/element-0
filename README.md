@@ -7,11 +7,11 @@
 <h2>Element 0</h2>
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/habedi/element-0/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/actions/workflows/tests.yml)
-[![Zig Version](https://img.shields.io/badge/Zig-0.14.1-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
-[![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
 [![Docs](https://img.shields.io/badge/docs-view-blue?style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/habedi/element-0/blob/main/LICENSE)
 [![Examples](https://img.shields.io/badge/examples-view-green?style=flat&labelColor=282c34&logo=zig)](https://github.com/habedi/element-0/tree/main/examples)
+[![Zig Version](https://img.shields.io/badge/Zig-0.14.1-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
+[![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
 
 A small embeddable Lisp for the Zig ecosystem λ
 
@@ -19,22 +19,20 @@ A small embeddable Lisp for the Zig ecosystem λ
 
 ---
 
-Element 0 is a Lisp dialect implemented in the Zig programming language.
-It is inspired by Scheme and aims to be compliant with
+Element 0 programming language is a new Lisp dialect inspired by Scheme and aims to be compliant with
 the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to a good degree, but not limited to it.
 
-This project provides a lightweight, embeddable interpreter (named `Elz`) for Element 0.
-Elz can be easily integrated into Zig applications as a scripting engine, as well as a standalone interactive
-read-eval-print-loop (REPL).
-Additionally, it comes with a foreign function interface (FFI) API that lets you call Zig procedures from Element 0 and
-vice versa.
+This project provides an interpreter for the Element 0 language written in Zig.
+The interpreter is named Elz (pronounced like "el-zee") and can be integrated into Zig applications as a scripting engine.
+In addition, Elz comes with a read-eval-print loop (REPL) for interactive development and testing, and easily can be
+extended using Zig code using foreign function interface (FFI) or Element 0 code.
 
 ### Features
 
-* A good level of R5RS compliance with a sizable standard library (see [std.elz](src/stdlib/std.elz)).
+* A good level of R5RS compliance with a growing standard library (see [std.elz](src/stdlib/std.elz)).
 * Easy to integrate into Zig projects as a lightweight and fast scripting engine.
-* Easy to extend with Zig functions via FFI.
-* Comes with REPL for scripting and development.
+* Easy to extend with Zig functions via FFI or writing Element 0 code.
+* Prepacked with a REPL, and module system, and a debugger.
 
 See the [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features.
 
