@@ -1,6 +1,22 @@
 # ################################################################################
 # # Configuration and Variables
 # ################################################################################
+
+# --- GC Debug Configuration ---
+# This is the single switch to control all GC debugging.
+# Set to 1 to enable the compile-time trace and the runtime stats summary.
+# Set to 0 for a quiet build and run.
+GC_DEBUG_MODE ?= 0
+
+# These two variables are now set based on the master switch.
+GC_PRINT_STATS := $(GC_DEBUG_MODE)
+GC_DEBUG       := $(GC_DEBUG_MODE)
+
+# We must export GC_DEBUG for the `zig build` process to see it.
+# This allows `build.zig` to add the -DGC_DEBUG compile flag.
+export GC_DEBUG
+
+# --- General Project Configuration ---
 ZIG    ?= $(shell which zig || echo ~/.local/share/zig/0.14.1/zig)
 BUILD_TYPE    ?= Debug
 BUILD_OPTS      = -Doptimize=$(BUILD_TYPE)
@@ -10,10 +26,9 @@ EXAMPLES_DIR  := examples
 BUILD_DIR     := zig-out
 CACHE_DIR     := .zig-cache
 BINARY_NAME   := example
-RELEASE_MODE := ReleaseSmall
+RELEASE_MODE := ReleaseSafe
 TEST_FLAGS := --summary all #--verbose
 JUNK_FILES := *.o *.obj *.dSYM *.dll *.so *.dylib *.a *.lib *.pdb temp/
-GC_PRINT_STATS ?= 0 # Set to 1 to enable GC stats printing
 
 # Automatically find all example names
 ZIG_EXAMPLES  := $(patsubst %.zig,%,$(notdir $(wildcard examples/zig/*.zig)))
@@ -28,7 +43,7 @@ SHELL         := /usr/bin/env bash
 # Targets
 ################################################################################
 
-.PHONY: all help build rebuild run run-elz test release clean lint format docs serve-docs install-deps setup-hooks test-hooks
+.PHONY: all help build rebuild run run-quiet run-elz run-elz-quiet test release clean lint format docs serve-docs install-deps setup-hooks test-hooks
 .DEFAULT_GOAL := help
 
 help: ## Show the help messages for all targets
@@ -44,43 +59,47 @@ init: ## Initialize a new Zig project
 	@echo "Initializing a new Zig project..."
 	@$(ZIG) init
 
-build: ## Build project (e.g. 'make build BUILD_TYPE=ReleaseSmall' or 'make build' for Debug mode)
+build: ## Build project (e.g. 'make build BUILD_TYPE=ReleaseSafe')
 	@echo "Building project in $(BUILD_TYPE) mode with $(JOBS) concurrent jobs..."
 	@$(ZIG) build $(BUILD_OPTS) -j$(JOBS)
 
 rebuild: clean build  ## clean and build
 
-# makefile
-run: ## Run a Zig example (e.g. 'make run EXAMPLE=e1_ffi_1' or 'make run' to run all)
+run: ## Run a Zig example (e.g. 'make run EXAMPLE=e1_ffi_1')
 	@if [ "$(EXAMPLE)" = "all" ]; then \
-		echo "--> Running all Zig examples..."; \
-		fail=0; \
-		for ex in $(ZIG_EXAMPLES); do \
-			echo ""; \
-			echo "--> Running '$$ex'"; \
-			GC_PRINT_STATS=$(GC_PRINT_STATS) $(ZIG) build run-$$ex $(BUILD_OPTS) || { echo "FAILED: $$ex"; fail=1; }; \
-		done; \
-		exit $$fail; \
+	   echo "--> Running all Zig examples..."; \
+	   fail=0; \
+	   for ex in $(ZIG_EXAMPLES); do \
+	      echo ""; \
+	      echo "--> Running '$$ex'"; \
+	      GC_PRINT_STATS=$(GC_PRINT_STATS) $(ZIG) build run-$$ex $(BUILD_OPTS) || { echo "FAILED: $$ex"; fail=1; }; \
+	   done; \
+	   exit $$fail; \
 	else \
-		echo "--> Running Zig example: $(EXAMPLE)"; \
-		GC_PRINT_STATS=$(GC_PRINT_STATS) $(ZIG) build run-$(EXAMPLE) $(BUILD_OPTS); \
+	   echo "--> Running Zig example: $(EXAMPLE)"; \
+	   GC_PRINT_STATS=$(GC_PRINT_STATS) $(ZIG) build run-$(EXAMPLE) $(BUILD_OPTS); \
 	fi
 
-run-elz: build ## Run a Lisp example (e.g. 'make run-elz ELZ_EXAMPLE=e1-cons-car-cdr' or 'make run-elz' to run all)
+run-quiet: ## Run a Zig example quietly in ReleaseSafe mode
+	@$(MAKE) run BUILD_TYPE=$(RELEASE_MODE) EXAMPLE=$(EXAMPLE)
+
+run-elz: build ## Run a Lisp example (e.g. 'make run-elz ELZ_EXAMPLE=e1-cons-car-cdr')
 	@if [ "$(ELZ_EXAMPLE)" = "all" ]; then \
-		echo "--> Running all Lisp examples..."; \
-		fail=0; \
-		for ex in $(ELZ_EXAMPLES); do \
-			echo ""; \
-			echo "--> Running '$$ex'"; \
-			GC_PRINT_STATS=$(GC_PRINT_STATS) ./zig-out/bin/elz-repl --file $$ex || { echo "FAILED: $$ex"; fail=1; }; \
-		done; \
-		exit $$fail; \
+	   echo "--> Running all Lisp examples..."; \
+	   fail=0; \
+	   for ex in $(ELZ_EXAMPLES); do \
+	      echo ""; \
+	      echo "--> Running '$$ex'"; \
+	      GC_PRINT_STATS=$(GC_PRINT_STATS) ./zig-out/bin/elz-repl --file $$ex || { echo "FAILED: $$ex"; fail=1; }; \
+	   done; \
+	   exit $$fail; \
 	else \
-		echo "--> Running Lisp example: $(ELZ_EXAMPLE)"; \
-		GC_PRINT_STATS=$(GC_PRINT_STATS) ./zig-out/bin/elz-repl --file examples/elz/$(ELZ_EXAMPLE).elz; \
+	   echo "--> Running Lisp example: $(ELZ_EXAMPLE)"; \
+	   GC_PRINT_STATS=$(GC_PRINT_STATS) ./zig-out/bin/elz-repl --file examples/elz/$(ELZ_EXAMPLE).elz; \
 	fi
 
+run-elz-quiet: ## Run a Lisp example quietly in ReleaseSafe mode
+	@$(MAKE) run-elz BUILD_TYPE=$(RELEASE_MODE) ELZ_EXAMPLE=$(ELZ_EXAMPLE)
 
 repl: ## Start the REPL
 	@echo "Starting the REPL..."
@@ -92,7 +111,7 @@ test: ## Run tests
 
 release: ## Build in Release mode
 	@echo "Building the project in Release mode..."
-	@$(MAKE) BUILD_TYPE=$(RELEASE_MODE) build
+	@$(MAKE) build BUILD_TYPE=$(RELEASE_MODE)
 
 clean: ## Remove docs, build artifacts, and cache directories
 	@echo "Removing build artifacts, cache, generated docs, and junk files..."
