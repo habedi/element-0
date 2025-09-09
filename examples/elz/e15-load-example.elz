@@ -1,0 +1,19 @@
+;;; This is the main script.
+;;; It loads 'e14-greetings-lib.elz' and uses what it defines.
+
+(display "Loading library file...")
+(newline)
+
+;; The path must be relative to where you run the program (the project root).
+(load "examples/elz/e14-greetings-lib.elz")
+
+(display "Load complete. Now using the loaded definitions.")
+(newline)
+(newline)
+
+;; We can now access the variable defined in the other file.
+(display library-message)
+(newline)
+
+;; We can also call the function defined in the other file.
+(congratulate "Hassan")
