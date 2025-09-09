@@ -47,6 +47,7 @@ pub fn populate_predicates(env: *core.Environment) !void {
     try env.set("symbol?", core.Value{ .procedure = predicates.is_symbol });
     try env.set("number?", core.Value{ .procedure = predicates.is_number });
     try env.set("list?", core.Value{ .procedure = predicates.is_list });
+    try env.set("pair?", core.Value{ .procedure = predicates.is_pair });
 
     try env.set("eq?", core.Value{ .procedure = predicates.is_eq });
     try env.set("eqv?", core.Value{ .procedure = predicates.is_eqv });
