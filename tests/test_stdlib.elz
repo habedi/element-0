@@ -1,0 +1,84 @@
+;;; ---------------------------------------
+;;; Element 0 Standard Library Test Suite
+;;; ---------------------------------------
+
+(display "Running Element 0 Standard Library tests...")
+(newline)
+
+;; --- Test Runner Framework ---
+
+(define *tests-run* 0)
+(define *tests-failed* 0)
+
+(define (test-case name test-expr)
+  (set! *tests-run* (+ *tests-run* 1))
+  (if (not test-expr)
+      (begin
+        (set! *tests-failed* (+ *tests-failed* 1))
+        (display "[FAILED]: ") (display name) (newline))
+      (begin
+        (display "[PASSED]: ") (display name) (newline))))
+
+(define (report-summary)
+  (newline)
+  (display "--------------------") (newline)
+  (display "Tests Finished.") (newline)
+  (display "Total run: ") (display *tests-run*) (newline)
+  (display "Passed: ") (display (- *tests-run* *tests-failed*)) (newline)
+  (display "Failed: ") (display *tests-failed*) (newline)
+  (newline)
+  (if (> *tests-failed* 0)
+      (display "RESULT: FAILED")
+      (display "RESULT: PASSED"))
+  (newline))
+
+;; --- Test Cases ---
+
+;; Logical and Boolean Functions
+(test-case "not false" (equal? (not #f) #t))
+(test-case "not true" (equal? (not #t) #f))
+(test-case "not list" (equal? (not '(1 2)) #f))
+(test-case "!= equal lists" (equal? (!= '(1 2) '(1 2)) #f))
+(test-case "!= different lists" (equal? (!= '(1 2) '(1 3)) #t))
+(test-case "!= different types" (equal? (!= 1 "1") #t))
+
+;; Type Predicates
+(test-case "atom? symbol" (equal? (atom? 'a) #t))
+(test-case "atom? number" (equal? (atom? 123) #t))
+(test-case "atom? bignum" (equal? (atom? 12345678901234567890) #t))
+(test-case "atom? list" (equal? (atom? '(1 2)) #f))
+(test-case "atom? empty-list" (equal? (atom? '()) #t)) ;; nil is an atom
+
+;; Numeric Functions
+(test-case "abs positive" (equal? (abs 10) 10))
+(test-case "abs negative" (equal? (abs -10) 10))
+(test-case "max" (equal? (max 10 20 5) 20))
+(test-case "min" (equal? (min 10 20 5) 5))
+(test-case "square" (equal? (square 5) 25))
+(test-case "avg" (equal? (avg '(10 20 30)) 20))
+(test-case "fibonacci" (equal? (fib 10) 55))
+
+;; List Utilities
+(test-case "first" (equal? (first '(a b c)) 'a))
+(test-case "rest" (equal? (rest '(a b c)) '(b c)))
+(test-case "nth" (equal? (nth 2 '(a b c d)) 'c))
+(test-case "last-element" (equal? (last-element '(a b c)) 'c))
+(test-case "copy-list" (let ((a '(1 2))) (not (eq? a (copy-list a)))))
+(test-case "indexof found" (equal? (indexof 'b '(a b c)) 1))
+(test-case "indexof not found" (equal? (indexof 'z '(a b c)) #f))
+(test-case "reverse" (equal? (reverse '(1 2 3)) '(3 2 1)))
+
+;; Higher-Order Functions
+(test-case "any? true" (any? (lambda (x) (> x 3)) '(1 2 3 4 5)))
+(test-case "any? false" (not (any? (lambda (x) (> x 5)) '(1 2 3 4 5))))
+(test-case "every? true" (every? (lambda (x) (< x 6)) '(1 2 3 4 5)))
+(test-case "every? false" (not (every? (lambda (x) (< x 5)) '(1 2 3 4 5))))
+(test-case "quicksort ascending" (equal? (quicksort '(5 2 8 1 9) <) '(1 2 5 8 9)))
+(test-case "quicksort descending" (equal? (quicksort '(5 2 8 1 9) >) '(9 8 5 2 1)))
+
+;; Advanced & Demonstrative
+(test-case "Y Combinator factorial" (equal? ((Y (lambda (r) (lambda (x) (if (< x 2) 1 (* x (r (- x 1))))))) 5) 120))
+
+
+;; --- Run Summary ---
+(report-summary)
