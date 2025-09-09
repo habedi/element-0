@@ -129,3 +129,39 @@ pub fn eq_num(_: *core.Environment, args: core.ValueList) !Value {
     if (a != .number or b != .number) return ElzError.InvalidArgument;
     return Value{ .boolean = a.number == b.number };
 }
+
+/// The `sqrt` primitive procedure.
+pub fn sqrt(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = std.math.sqrt(args.items[0].number) };
+}
+
+/// The `sin` primitive procedure.
+pub fn sin(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = std.math.sin(args.items[0].number) };
+}
+
+/// The `cos` primitive procedure.
+pub fn cos(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = std.math.cos(args.items[0].number) };
+}
+
+/// The `tan` primitive procedure.
+pub fn tan(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = std.math.tan(args.items[0].number) };
+}
+
+/// The `log` primitive procedure (natural logarithm).
+pub fn log(_: *core.Environment, args: core.ValueList) !Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    const x = args.items[0].number;
+    return Value{ .number = std.math.log(f64, std.math.e, x) };
+}

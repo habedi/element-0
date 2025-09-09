@@ -62,13 +62,13 @@ It outlines the features to be implemented and their current status.
     * [x] `+`, `-`, `*`, `/`
     * [x] `=`, `<`, `>`, `<=`, `>=`
     * [x] `abs`
-    * [ ] `sqrt`
+    * [x] `sqrt`
     * [x] `max`
     * [x] `min`
 * **Symbol Handling**:
-    * [ ] `symbol->string`, `string->symbol`
+    * [x] `symbol->string`, `string->symbol`
 * **String and Character Manipulation**:
-    * [ ] `string-length`, `string-ref`, `char=?`
+    * [x] `string-length`, `string-ref`, `char=?`
 * **Vector Manipulation**:
     * [ ] `vector`, `make-vector`, `vector-ref`, `vector-set!`
 
@@ -91,7 +91,7 @@ It outlines the features to be implemented and their current status.
 
 ### 3. Expanded Standard Library
 
-* [ ] **Math Library**: More common mathematical functions (e.g., trigonometric, logarithmic).
+* [x] **Math Library**: More common mathematical functions (e.g., trigonometric, logarithmic).
 * [x] **List Utilities**: `filter`, `fold-left`, `fold-right`, and other common list processing functions.
 * [ ] **String Utilities**: `substring`, `string-append`, `string-split`, etc.
 * [ ] **Regular Expressions**: A library for advanced text pattern matching.

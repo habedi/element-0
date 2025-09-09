@@ -17,6 +17,8 @@ pub const SandboxFlags = struct {
     enable_lists: bool = true,
     /// Enables type predicate procedures like `null?`, `boolean?`, `number?`.
     enable_predicates: bool = true,
+    /// Enables string, symbol, and character procedures like `symbol->string`.
+    enable_strings: bool = true,
     /// Enables I/O procedures like `display`, `load`, which may have side effects.
     enable_io: bool = true,
 };
@@ -45,6 +47,9 @@ pub const Interpreter = struct {
         }
         if (flags.enable_predicates) {
             try env_setup.populate_predicates(root_env);
+        }
+        if (flags.enable_strings) {
+            try env_setup.populate_strings(root_env);
         }
         if (flags.enable_io) {
             try env_setup.populate_io(root_env);

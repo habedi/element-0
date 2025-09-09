@@ -95,6 +95,29 @@
         ((equal? obj (caar alist)) (car alist))
         (else (assoc obj (cdr alist)))))
 
+;; (take n lst)
+;; Returns the first n elements of a list.
+(define (take n lst)
+  (letrec ((take-iter (lambda (count l acc)
+                       (if (or (= count 0) (null? l))
+                           (reverse acc)
+                           (take-iter (- count 1)
+                                      (cdr l)
+                                      (cons (car l) acc))))))
+    (take-iter n lst '())))
+
+;; (drop n lst)
+;; Returns the list without its first n elements.
+(define (drop n lst)
+  (list-tail lst n))
+
+;; (last-pair lst)
+;; Returns the last pair in a non-empty list.
+(define (last-pair lst)
+  (if (null? (cdr lst))
+      lst
+      (last-pair (cdr lst))))
+
 
 ;;; ---------------------------------
 ;;; Iteration

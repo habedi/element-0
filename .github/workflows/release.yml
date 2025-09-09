@@ -99,4 +99,3 @@ jobs:
           asset_path: ./${{ matrix.artifact_name }}
           asset_name: ${{ matrix.artifact_name }}
           asset_content_type: ${{ matrix.asset_content_type }}
-

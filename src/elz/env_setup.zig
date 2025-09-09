@@ -6,6 +6,7 @@ const ffi = @import("ffi.zig");
 const lists = @import("./primitives/lists.zig");
 const math = @import("./primitives/math.zig");
 const predicates = @import("./primitives/predicates.zig");
+const strings = @import("./primitives/strings.zig");
 const control = @import("./primitives/control.zig");
 const io = @import("./primitives/io.zig");
 
@@ -20,6 +21,11 @@ pub fn populate_math(env: *core.Environment) !void {
     try env.set(">=", core.Value{ .procedure = math.ge });
     try env.set(">", core.Value{ .procedure = math.gt });
     try env.set("=", core.Value{ .procedure = math.eq_num });
+    try env.set("sqrt", core.Value{ .procedure = math.sqrt });
+    try env.set("sin", core.Value{ .procedure = math.sin });
+    try env.set("cos", core.Value{ .procedure = math.cos });
+    try env.set("tan", core.Value{ .procedure = math.tan });
+    try env.set("log", core.Value{ .procedure = math.log });
 }
 
 /// Populates the environment with list manipulation procedures.
@@ -47,6 +53,14 @@ pub fn populate_predicates(env: *core.Environment) !void {
     try env.set("equal?", core.Value{ .procedure = predicates.is_equal });
 }
 
+/// Populates the environment with string and symbol procedures.
+pub fn populate_strings(env: *core.Environment) !void {
+    try env.set("symbol->string", core.Value{ .procedure = strings.symbol_to_string });
+    try env.set("string->symbol", core.Value{ .procedure = strings.string_to_symbol });
+    try env.set("string-length", core.Value{ .procedure = strings.string_length });
+    try env.set("char=?", core.Value{ .procedure = strings.char_eq });
+}
+
 /// Populates the environment with control procedures.
 pub fn populate_control(env: *core.Environment) !void {
     try env.set("apply", core.Value{ .procedure = control.apply });
@@ -65,6 +79,7 @@ pub fn populate_globals(env: *core.Environment) !void {
     try populate_math(env);
     try populate_lists(env);
     try populate_predicates(env);
+    try populate_strings(env);
     try populate_control(env);
     try populate_io(env);
 }
