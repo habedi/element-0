@@ -112,6 +112,67 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     }
                 }
 
+                if (first.is_symbol("cond")) {
+                    var current_clause_node = rest;
+                    while (current_clause_node != .nil) {
+                        const clause_pair = switch (current_clause_node) {
+                            .pair => |cp| cp,
+                            else => return ElzError.InvalidArgument,
+                        };
+                        const clause = clause_pair.car;
+                        const clause_p = switch (clause) {
+                            .pair => |cp| cp,
+                            else => return ElzError.InvalidArgument,
+                        };
+                        const test_expr = clause_p.car;
+                        if (test_expr.is_symbol("else")) {
+                            const body = clause_p.cdr;
+                            if (body == .nil) return ElzError.InvalidArgument;
+                            var current_body_node = body;
+                            while (current_body_node.pair.cdr != .nil) {
+                                _ = try eval(&current_body_node.pair.car, env, fuel);
+                                current_body_node = current_body_node.pair.cdr;
+                            }
+                            current_ast = &current_body_node.pair.car;
+                            continue;
+                        }
+                        const condition = try eval(&test_expr, env, fuel);
+                        const is_true = switch (condition) {
+                            .boolean => |b| b,
+                            else => true,
+                        };
+                        if (is_true) {
+                            const body = clause_p.cdr;
+                            if (body == .nil) return condition;
+                            var current_body_node = body;
+                            while (current_body_node.pair.cdr != .nil) {
+                                _ = try eval(&current_body_node.pair.car, env, fuel);
+                                current_body_node = current_body_node.pair.cdr;
+                            }
+                            current_ast = &current_body_node.pair.car;
+                            continue;
+                        }
+                        current_clause_node = clause_pair.cdr;
+                    }
+                    return Value.nil;
+                }
+
+                if (first.is_symbol("and")) {
+                    if (rest == .nil) return Value{ .boolean = true };
+                    var current_node = rest;
+                    while (current_node.pair.cdr != .nil) {
+                        const result = try eval(&current_node.pair.car, env, fuel);
+                        const is_true = switch (result) {
+                            .boolean => |b| b,
+                            else => true,
+                        };
+                        if (!is_true) return result;
+                        current_node = current_node.pair.cdr;
+                    }
+                    current_ast = &current_node.pair.car;
+                    continue;
+                }
+
                 if (first.is_symbol("or")) {
                     if (rest == .nil) return Value{ .boolean = false };
                     var current_node = rest;
