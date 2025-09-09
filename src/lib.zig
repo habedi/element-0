@@ -5,12 +5,13 @@
 pub const core = @import("elz/core.zig");
 pub const ElzError = @import("elz/errors.zig").ElzError;
 pub const eval = @import("elz/eval.zig");
-pub const write = @import("elz/writer.zig").write;
 pub const ffi = @import("elz/ffi.zig");
 pub const env_setup = @import("elz/env_setup.zig");
 pub const interpreter = @import("elz/interpreter.zig");
 pub const errors = @import("elz/errors.zig");
 pub const parser = @import("elz/parser.zig");
+pub const api_helpers = @import("elz/api_helpers.zig");
+pub const write = @import("elz/writer.zig").write;
 
 pub const Value = core.Value;
 pub const Environment = core.Environment;

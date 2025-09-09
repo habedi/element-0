@@ -9,8 +9,6 @@ const predicates = @import("./primitives/predicates.zig");
 const control = @import("./primitives/control.zig");
 
 /// Populates the environment with mathematical procedures.
-///
-/// - `env`: A pointer to the environment to populate.
 pub fn populate_math(env: *core.Environment) !void {
     try env.set("+", core.Value{ .procedure = math.add });
     try env.set("-", core.Value{ .procedure = math.sub });
@@ -24,8 +22,6 @@ pub fn populate_math(env: *core.Environment) !void {
 }
 
 /// Populates the environment with list manipulation procedures.
-///
-/// - `env`: A pointer to the environment to populate.
 pub fn populate_lists(env: *core.Environment) !void {
     try env.set("cons", core.Value{ .procedure = lists.cons });
     try env.set("car", core.Value{ .procedure = lists.car });
@@ -38,8 +34,6 @@ pub fn populate_lists(env: *core.Environment) !void {
 }
 
 /// Populates the environment with type predicate procedures.
-///
-/// - `env`: A pointer to the environment to populate.
 pub fn populate_predicates(env: *core.Environment) !void {
     try env.set("null?", core.Value{ .procedure = predicates.is_null });
     try env.set("boolean?", core.Value{ .procedure = predicates.is_boolean });
@@ -48,20 +42,16 @@ pub fn populate_predicates(env: *core.Environment) !void {
     try env.set("list?", core.Value{ .procedure = predicates.is_list });
 
     try env.set("eq?", core.Value{ .procedure = predicates.is_eq });
-    try env.set("eqv?", core.Value{ .procedure = predicates.is_eq }); // Alias for now
+    try env.set("eqv?", core.Value{ .procedure = predicates.is_eqv });
     try env.set("equal?", core.Value{ .procedure = predicates.is_equal });
 }
 
 /// Populates the environment with control procedures.
-///
-/// - `env`: A pointer to the environment to populate.
 pub fn populate_control(env: *core.Environment) !void {
     try env.set("apply", core.Value{ .procedure = control.apply });
 }
 
 /// Populates the environment with all global procedures.
-///
-/// - `env`: A pointer to the environment to populate.
 pub fn populate_globals(env: *core.Environment) !void {
     try populate_math(env);
     try populate_lists(env);
@@ -70,10 +60,6 @@ pub fn populate_globals(env: *core.Environment) !void {
 }
 
 /// Defines a foreign function in the given environment.
-///
-/// - `env`: A pointer to the environment.
-/// - `name`: The symbol name for the foreign function.
-/// - `func`: The Zig function to expose.
 pub fn define_foreign_func(env: *core.Environment, name: []const u8, comptime func: anytype) !void {
     const ff = ffi.makeForeignFunc(func);
     try env.set(name, core.Value{ .foreign_procedure = ff });
