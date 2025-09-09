@@ -118,6 +118,8 @@ pub const Value = union(enum) {
     opaque_pointer: ?*anyopaque,
     /// The `nil` value, representing an empty list.
     nil,
+    /// A special value for procedures that only have side effects.
+    unspecified,
 
     /// Checks if the value is a specific symbol.
     ///
@@ -140,7 +142,7 @@ pub const Value = union(enum) {
     pub fn deep_clone(self: Value, allocator: std.mem.Allocator) !Value {
         return switch (self) {
             .symbol => |s| Value{ .symbol = try allocator.dupe(u8, s) },
-            .number, .boolean, .character, .closure, .procedure, .foreign_procedure, .opaque_pointer, .nil => self,
+            .number, .boolean, .character, .closure, .procedure, .foreign_procedure, .opaque_pointer, .nil, .unspecified => self,
             .string => |s| Value{ .string = try allocator.dupe(u8, s) },
             .pair => |p| {
                 const new_pair = try allocator.create(Pair);

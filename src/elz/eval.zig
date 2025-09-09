@@ -63,7 +63,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
         const env = current_env;
 
         switch (ast.*) {
-            .number, .boolean, .character, .nil, .closure, .procedure, .foreign_procedure, .opaque_pointer => return ast.*,
+            .number, .boolean, .character, .nil, .closure, .procedure, .foreign_procedure, .opaque_pointer, .unspecified => return ast.*,
             .string => |s| return Value{ .string = try env.allocator.dupe(u8, s) },
             .symbol => |sym| return env.get(sym),
             .pair => |p| {

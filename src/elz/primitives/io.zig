@@ -39,7 +39,7 @@ pub fn display(_: *core.Environment, args: core.ValueList) !Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
     try display_writer(args.items[0], stdout);
-    return Value.nil;
+    return Value.unspecified;
 }
 
 /// The `write` primitive procedure.
@@ -48,7 +48,7 @@ pub fn write_proc(_: *core.Environment, args: core.ValueList) !Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
     try writer.write(args.items[0], stdout);
-    return Value.nil;
+    return Value.unspecified;
 }
 
 /// The `newline` primitive procedure.
@@ -57,7 +57,7 @@ pub fn newline(_: *core.Environment, args: core.ValueList) !Value {
     if (args.items.len != 0) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
     try stdout.print("\n", .{});
-    return Value.nil;
+    return Value.unspecified;
 }
 
 /// The `load` primitive procedure.
@@ -69,6 +69,7 @@ pub fn load(env: *core.Environment, args: core.ValueList) !Value {
 
     const filename = filename_val.string;
     const file = std.fs.cwd().openFile(filename, .{}) catch |err| {
+        // We can use std.log for richer error messages on the host side.
         std.log.err("failed to load file '{s}': {s}", .{ filename, @errorName(err) });
         return ElzError.ForeignFunctionError;
     };
@@ -78,13 +79,14 @@ pub fn load(env: *core.Environment, args: core.ValueList) !Value {
     defer env.allocator.free(source);
 
     const forms = try parser.readAll(source, env.allocator);
-    if (forms.items.len == 0) return Value.nil;
+    if (forms.items.len == 0) return Value.unspecified;
 
-    var last_result: Value = .nil;
+    var last_result: Value = .unspecified;
     for (forms.items) |form| {
-        var fuel: u64 = 1_000_000;
+        var fuel: u64 = 1_000_000; // Give each loaded file a fresh fuel budget.
         last_result = try eval.eval(&form, env, &fuel);
     }
 
-    return last_result;
+    // Only return the last result if it's not unspecified, otherwise keep it unspecified.
+    return if (last_result == .unspecified) Value.unspecified else last_result;
 }

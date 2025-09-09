@@ -67,6 +67,7 @@ fn equal_values(a: Value, b: Value) bool {
             .pair => |pb| equal_values(pa.car, pb.car) and equal_values(pa.cdr, pb.cdr),
             else => false,
         },
+        .unspecified => return b == .unspecified,
     }
 }
 
@@ -153,6 +154,7 @@ pub fn is_eqv(_: *core.Environment, args: core.ValueList) !Value {
             .symbol => |bv| av.ptr == bv.ptr,
             else => false,
         },
+        .unspecified => b == .unspecified,
     };
     return Value{ .boolean = result };
 }

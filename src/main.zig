@@ -29,8 +29,10 @@ fn exec(interpreter: *elz.Interpreter, source: []const u8) !void {
     }
 
     const stdout = std.io.getStdOut().writer();
-    try elz.write(last_result, stdout);
-    try stdout.print("\n", .{});
+    if (last_result != .unspecified) {
+        try elz.write(last_result, stdout);
+        try stdout.print("\n", .{});
+    }
 }
 
 /// Starts the Read-Eval-Print-Loop (REPL).
@@ -83,8 +85,11 @@ fn repl(interpreter: *elz.Interpreter) !void {
                 };
             }
             const stdout = std.io.getStdOut().writer();
-            try elz.write(last_result, stdout);
-            try stdout.print("\n", .{});
+            // Only print the result if it is not the special 'unspecified' value.
+            if (last_result != .unspecified) {
+                try elz.write(last_result, stdout);
+                try stdout.print("\n", .{});
+            }
         }
     }
 }
