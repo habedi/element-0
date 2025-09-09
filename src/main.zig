@@ -148,8 +148,8 @@ pub fn main() anyerror!void {
 
     var root_cmd = try chilli.Command.init(gpa.allocator(), .{
         .name = "elz",
-        .description = "A Lisp dialect implemented in Zig",
-        .version = "0.1.0",
+        .description = "A Lisp dialect implemented in Zig λ",
+        .version = "0.1.0-alpha.2",
         .exec = rootExec,
     });
     defer root_cmd.deinit();

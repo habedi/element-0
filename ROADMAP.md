@@ -8,12 +8,13 @@ It outlines the features to be implemented and their current status.
 
 ### 1. Host API and FFI
 
-* **Embedding API**:
-    * [x] An `Interpreter` struct that manages all state.
+* **Embedding API**
+    * [x] An `Interpreter` struct that manages all interpreter states.
+    * [x] An `Environment` struct representing variable scopes.
     * [x] `init` and `deinit` functions for lifecycle management.
     * [x] `evalString` to execute Element 0 code from Zig.
     * [x] Define global variables from Zig via the root environment.
-* **FFI**:
+* **FFI**
     * [x] Support for variadic functions. Zig functions can accept a variable number of Element 0 arguments.
     * [x] Graceful error propagation from Zig functions to the Element 0 environment.
     * [x] Support for opaque pointers. Element 0 can hold references to Zig data structures.
@@ -50,26 +51,26 @@ It outlines the features to be implemented and their current status.
 
 #### 2.3. Standard Library Procedures
 
-* **Equivalence Predicates**:
+* **Equivalence Predicates**
     * [x] `eq?`, `eqv?`, `equal?`
-* **Type Predicates**:
+* **Type Predicates**
     * [x] `null?`, `boolean?`, `symbol?`, `number?`, `list?`
-* **Pair and List Manipulation**:
+* **Pair and List Manipulation**
     * [x] `cons`, `car`, `cdr`
     * [x] `list`, `length`, `append`, `reverse`, `map`
     * [x] `for-each`
-* **Numeric Operations**:
+* **Numeric Operations**
     * [x] `+`, `-`, `*`, `/`
     * [x] `=`, `<`, `>`, `<=`, `>=`
     * [x] `abs`
     * [x] `sqrt`
     * [x] `max`
     * [x] `min`
-* **Symbol Handling**:
+* **Symbol Handling**
     * [x] `symbol->string`, `string->symbol`
-* **String and Character Manipulation**:
+* **String and Character Manipulation**
     * [x] `string-length`, `string-ref`, `char=?`
-* **Vector Manipulation**:
+* **Vector Manipulation**
     * [ ] `vector`, `make-vector`, `vector-ref`, `vector-set!`
 
 #### 2.4. Syntactic Extensions
@@ -91,13 +92,13 @@ It outlines the features to be implemented and their current status.
 
 ### 3. Expanded Standard Library
 
-* [x] **Math Library**: More common mathematical functions (e.g., trigonometric, logarithmic).
+* [x] **Math Library**: More common mathematical functions (like trigonometric and logarithmic functions).
 * [x] **List Utilities**: `filter`, `fold-left`, `fold-right`, and other common list processing functions.
 * [ ] **String Utilities**: `substring`, `string-append`, `string-split`, etc.
 * [ ] **Regular Expressions**: A library for advanced text pattern matching.
-* [ ] **OS & Filesystem**: Procedures for file I/O, directory manipulation, and environment variables.
+* [ ] **OS and Filesystem**: Procedures for file I/O, directory manipulation, and environment variables.
 * [ ] **Advanced I/O**: A `format` procedure and a more comprehensive port system.
-* [ ] **Date & Time**: Utilities for working with dates and times.
+* [ ] **Date and Time**: Utilities for working with dates and times.
 
 ### 4. Advanced Language Features (Post-R5RS)
 
@@ -106,14 +107,14 @@ It outlines the features to be implemented and their current status.
 * [ ] **Error Handling**: A robust mechanism for handling runtime errors, such as `try/catch` or `with-handler`.
 * [ ] `call-with-current-continuation` (`call/cc`): Support for first-class continuations.
 
-### 5. Better Host Integration & Embeddability
+### 5. Better Host Integration and Embeddability
 
-* [ ] **Advanced FFI**:
+* [ ] **Advanced FFI**
     * [ ] Support for passing complex Zig structs.
     * [ ] Ability to pass Elz closures to Zig as callbacks.
     * [ ] Automatic type conversions for more data types.
-* [ ] **Sandboxing & Security**:
+* [ ] **Sandboxing and Security**
     * [x] A sandboxed mode to restrict access to I/O and other sensitive operations.
     * [ ] Host-level controls for memory and execution time limits.
-* [ ] **Serialization**:
+* [ ] **Serialization**
     * [ ] Built-in procedures to serialize and deserialize Elz objects (for example, to JSON or S-expressions).
