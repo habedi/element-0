@@ -30,6 +30,7 @@ It outlines the features to be implemented and their current status.
 * [x] Strings
 * [x] Procedures (closures)
 * [ ] Vectors
+* [ ] Hash Maps
 * [ ] Ports
 
 #### 2.2. Evaluation Semantics and Special Forms
@@ -53,11 +54,14 @@ It outlines the features to be implemented and their current status.
 * **Pair and List Manipulation**:
     * [x] `cons`, `car`, `cdr`
     * [x] `list`, `length`, `append`, `reverse`, `map`
-    * [ ] `for-each`
+    * [x] `for-each`
 * **Numeric Operations**:
     * [x] `+`, `-`, `*`, `/`
     * [x] `=`, `<`, `>`, `<=`, `>=`
-    * [ ] `abs`, `sqrt`, `max`, `min`
+    * [x] `abs`
+    * [ ] `sqrt`
+    * [x] `max`
+    * [x] `min`
 * **Symbol Handling**:
     * [ ] `symbol->string`, `string->symbol`
 * **String and Character Manipulation**:
@@ -72,21 +76,41 @@ It outlines the features to be implemented and their current status.
 #### 2.5. Advanced Control Flow
 
 * [x] `apply`
-* [ ] `call-with-current-continuation` (`call/cc`)
 * [ ] `eval`
 
 #### 2.6. I/O System
 
-* [ ] `read`, `write`, `display`
-* [ ] `load`
+* [ ] `read`
+* [x] `write`
+* [x] `display`
+* [x] `load`
 * [ ] `open-input-file`, `close-input-port`
 
-### 3. Additional Features
+### 3. Expanded Standard Library
 
-#### 3.1. Standard Library
+* [ ] **Math Library**: More common mathematical functions (e.g., trigonometric, logarithmic).
+* [x] **List Utilities**: `filter`, `foldl`, `foldr`, and other common list processing functions.
+* [ ] **String Utilities**: `substring`, `string-append`, `string-split`, etc.
+* [ ] **Regular Expressions**: A library for advanced text pattern matching.
+* [ ] **OS & Filesystem**: Procedures for file I/O, directory manipulation, and environment variables.
+* [ ] **Advanced I/O**: A `format` procedure and a more comprehensive port system.
+* [ ] **Date & Time**: Utilities for working with dates and times.
 
-* [ ] Math library with common mathematical functions.
-* [ ] List processing utilities like `filter`, `foldl`, `foldr`.
-* [ ] String manipulation functions like `substring`, `string-append`.
-* [ ] Date and time utilities.
-* [ ] File system operations.
+### 4. Advanced Language Features (Post-R5RS)
+
+* [ ] **Hygienic Macros**: A `syntax-rules` or similar system for powerful and safe compile-time metaprogramming.
+* [ ] **Module System**: A system for organizing code into reusable and encapsulated modules.
+* [ ] **Error Handling**: A robust mechanism for handling runtime errors, such as `try/catch` or `with-handler`.
+* [ ] `call-with-current-continuation` (`call/cc`): Support for first-class continuations.
+
+### 5. Better Host Integration & Embeddability
+
+* [ ] **Advanced FFI**:
+    * [ ] Support for passing complex Zig structs.
+    * [ ] Ability to pass Elz closures to Zig as callbacks.
+    * [ ] Automatic type conversions for more data types.
+* [ ] **Sandboxing & Security**:
+    * [ ] A sandboxed mode to restrict access to I/O and other sensitive operations.
+    * [ ] Host-level controls for memory and execution time limits.
+* [ ] **Serialization**:
+    * [ ] Built-in procedures to serialize and deserialize Elz objects (e.g., to JSON or S-expressions).
