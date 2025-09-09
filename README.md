@@ -23,7 +23,7 @@ Element 0 is a Lisp dialect implemented in the Zig programming language.
 It is inspired by Scheme and aims to be compliant with
 the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to a good degree, but not limited to it.
 
-This project provides a lightweight, embeddable interpreter (named `elz`) for Element 0.
+This project provides a lightweight, embeddable interpreter (named `Elz`) for Element 0.
 Elz can be easily integrated into Zig applications as a scripting engine, as well as a standalone interactive
 read-eval-print-loop (REPL).
 Additionally, it comes with a foreign function interface (FFI) API that lets you call Zig procedures from Element 0 and

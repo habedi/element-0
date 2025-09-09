@@ -13,7 +13,7 @@ BINARY_NAME   := example
 RELEASE_MODE := ReleaseSmall
 TEST_FLAGS := --summary all #--verbose
 JUNK_FILES := *.o *.obj *.dSYM *.dll *.so *.dylib *.a *.lib *.pdb temp/
-GC_PRINT_STATS ?= 1
+GC_PRINT_STATS ?= 0 # Set to 1 to enable GC stats printing
 
 # Automatically find all example names
 ZIG_EXAMPLES  := $(patsubst %.zig,%,$(notdir $(wildcard examples/zig/*.zig)))

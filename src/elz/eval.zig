@@ -9,11 +9,6 @@ const Environment = core.Environment;
 const ElzError = @import("errors.zig").ElzError;
 
 /// Evaluates a list of expressions.
-///
-/// - `list`: The list of expressions to evaluate.
-/// - `env`: The environment in which to evaluate the expressions.
-/// - `fuel`: A pointer to the execution fuel counter.
-/// - `return`: A `ValueList` containing the results of the evaluations.
 fn eval_expr_list(list: Value, env: *Environment, fuel: *u64) !core.ValueList {
     var results = core.ValueList.init(env.allocator);
     var current_node = list;
@@ -29,12 +24,6 @@ fn eval_expr_list(list: Value, env: *Environment, fuel: *u64) !core.ValueList {
 }
 
 /// Evaluates a procedure call.
-///
-/// - `proc`: The procedure to call.
-/// - `args`: The arguments to the procedure.
-/// - `env`: The environment in which to evaluate the procedure.
-/// - `fuel`: A pointer to the execution fuel counter.
-/// - `return`: The result of the procedure call.
 pub fn eval_proc(proc: Value, args: core.ValueList, env: *Environment, fuel: *u64) anyerror!Value {
     switch (proc) {
         .closure => |c| {
@@ -62,15 +51,6 @@ pub fn eval_proc(proc: Value, args: core.ValueList, env: *Environment, fuel: *u6
 }
 
 /// Evaluates an AST node in a given environment.
-/// This function is the heart of the interpreter. It uses a loop to
-/// implement tail-call optimization, which prevents stack overflow for
-/// recursive functions.
-///
-/// - `ast_start`: A pointer to the AST node to evaluate.
-/// - `env_start`: The environment in which to evaluate the AST node.
-/// - `fuel`: A pointer to the execution fuel counter. This is used to
-///           prevent infinite loops.
-/// - `return`: The result of the evaluation.
 pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerror!Value {
     var current_ast = ast_start;
     var current_env = env_start;
@@ -130,6 +110,22 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         current_ast = &p_alternative.car;
                         continue;
                     }
+                }
+
+                if (first.is_symbol("or")) {
+                    if (rest == .nil) return Value{ .boolean = false };
+                    var current_node = rest;
+                    while (current_node.pair.cdr != .nil) {
+                        const result = try eval(&current_node.pair.car, env, fuel);
+                        const is_true = switch (result) {
+                            .boolean => |b| b,
+                            else => true,
+                        };
+                        if (is_true) return result;
+                        current_node = current_node.pair.cdr;
+                    }
+                    current_ast = &current_node.pair.car;
+                    continue;
                 }
 
                 if (first.is_symbol("define")) {
