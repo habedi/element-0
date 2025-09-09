@@ -12,15 +12,18 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     {
-
-        // Flags for compiling BDWGC
         var cflags: std.ArrayListUnmanaged([]const u8) = .empty;
         defer cflags.deinit(b.allocator);
 
         // Always enable NO_EXECUTE_PERMISSION
         cflags.append(b.allocator, "-DNO_EXECUTE_PERMISSION") catch unreachable;
 
-        // enable GC debug/assertions when environment variable `GC_DEBUG` is set and not "0"
+        // For release builds, we must define NDEBUG to disable the GC's
+        // verbose internal tracing and assertions.
+        if (optimize != .Debug) {
+        cflags.append(b.allocator, "-DNDEBUG") catch unreachable;
+    }
+
         const gc_debug_enabled = blk: {
             const env_value = std.posix.getenv("GC_DEBUG") orelse break :blk false;
             break :blk std.mem.eql(u8, env_value, "1") or std.mem.eql(u8, env_value, "true");

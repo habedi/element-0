@@ -1,22 +1,6 @@
 # ################################################################################
 # # Configuration and Variables
 # ################################################################################
-
-# --- GC Debug Configuration ---
-# This is the single switch to control all GC debugging.
-# Set to 1 to enable the compile-time trace and the runtime stats summary.
-# Set to 0 for a quiet build and run.
-GC_DEBUG_MODE ?= 0
-
-# These two variables are now set based on the master switch.
-GC_PRINT_STATS := $(GC_DEBUG_MODE)
-GC_DEBUG       := $(GC_DEBUG_MODE)
-
-# We must export GC_DEBUG for the `zig build` process to see it.
-# This allows `build.zig` to add the -DGC_DEBUG compile flag.
-export GC_DEBUG
-
-# --- General Project Configuration ---
 ZIG    ?= $(shell which zig || echo ~/.local/share/zig/0.14.1/zig)
 BUILD_TYPE    ?= Debug
 BUILD_OPTS      = -Doptimize=$(BUILD_TYPE)
@@ -43,7 +27,7 @@ SHELL         := /usr/bin/env bash
 # Targets
 ################################################################################
 
-.PHONY: all help build rebuild run run-quiet run-elz run-elz-quiet test release clean lint format docs serve-docs install-deps setup-hooks test-hooks
+.PHONY: all help build rebuild run run-elz test release clean lint format docs serve-docs install-deps setup-hooks test-hooks
 .DEFAULT_GOAL := help
 
 help: ## Show the help messages for all targets
@@ -72,16 +56,13 @@ run: ## Run a Zig example (e.g. 'make run EXAMPLE=e1_ffi_1')
 	   for ex in $(ZIG_EXAMPLES); do \
 	      echo ""; \
 	      echo "--> Running '$$ex'"; \
-	      GC_PRINT_STATS=$(GC_PRINT_STATS) $(ZIG) build run-$$ex $(BUILD_OPTS) || { echo "FAILED: $$ex"; fail=1; }; \
+	      $(ZIG) build run-$$ex $(BUILD_OPTS) || { echo "FAILED: $$ex"; fail=1; }; \
 	   done; \
 	   exit $$fail; \
 	else \
 	   echo "--> Running Zig example: $(EXAMPLE)"; \
-	   GC_PRINT_STATS=$(GC_PRINT_STATS) $(ZIG) build run-$(EXAMPLE) $(BUILD_OPTS); \
+	   $(ZIG) build run-$(EXAMPLE) $(BUILD_OPTS); \
 	fi
-
-run-quiet: ## Run a Zig example quietly in ReleaseSafe mode
-	@$(MAKE) run BUILD_TYPE=$(RELEASE_MODE) EXAMPLE=$(EXAMPLE)
 
 run-elz: build ## Run a Lisp example (e.g. 'make run-elz ELZ_EXAMPLE=e1-cons-car-cdr')
 	@if [ "$(ELZ_EXAMPLE)" = "all" ]; then \
@@ -90,16 +71,13 @@ run-elz: build ## Run a Lisp example (e.g. 'make run-elz ELZ_EXAMPLE=e1-cons-car
 	   for ex in $(ELZ_EXAMPLES); do \
 	      echo ""; \
 	      echo "--> Running '$$ex'"; \
-	      GC_PRINT_STATS=$(GC_PRINT_STATS) ./zig-out/bin/elz-repl --file $$ex || { echo "FAILED: $$ex"; fail=1; }; \
+	      ./zig-out/bin/elz-repl --file $$ex || { echo "FAILED: $$ex"; fail=1; }; \
 	   done; \
 	   exit $$fail; \
 	else \
 	   echo "--> Running Lisp example: $(ELZ_EXAMPLE)"; \
-	   GC_PRINT_STATS=$(GC_PRINT_STATS) ./zig-out/bin/elz-repl --file examples/elz/$(ELZ_EXAMPLE).elz; \
+	   ./zig-out/bin/elz-repl --file examples/elz/$(ELZ_EXAMPLE).elz; \
 	fi
-
-run-elz-quiet: ## Run a Lisp example quietly in ReleaseSafe mode
-	@$(MAKE) run-elz BUILD_TYPE=$(RELEASE_MODE) ELZ_EXAMPLE=$(ELZ_EXAMPLE)
 
 repl: ## Start the REPL
 	@echo "Starting the REPL..."
