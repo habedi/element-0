@@ -27,7 +27,7 @@ SHELL         := /usr/bin/env bash
 # Targets
 ################################################################################
 
-.PHONY: all help build rebuild run run-elz test release clean lint format docs serve-docs install-deps setup-hooks test-hooks
+.PHONY: all help build rebuild run run-elz test test-elz release clean lint format docs serve-docs install-deps setup-hooks test-hooks
 .DEFAULT_GOAL := help
 
 help: ## Show the help messages for all targets
@@ -86,6 +86,10 @@ repl: ## Start the REPL
 test: ## Run tests
 	@echo "Running tests..."
 	@$(ZIG) build test $(BUILD_OPTS) -j$(JOBS) $(TEST_FLAGS)
+
+test-elz: ## Run Element 0 standard library tests
+	@echo "Running Element 0 standard library tests..."
+	@$(ZIG) build test-elz $(BUILD_OPTS) -j$(JOBS) $(TEST_FLAGS)
 
 release: ## Build in Release mode
 	@echo "Building the project in Release mode..."

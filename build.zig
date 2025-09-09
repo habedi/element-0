@@ -169,10 +169,10 @@ pub fn build(b: *std.Build) void {
         run_step.dependOn(&run_cmd.step);
     }
 
-    // --- New Step: Run Element 0 Standard Library Tests ---
+    // --- Run Element 0 Standard Library Tests ---
     const test_elz_step = b.step("test-elz", "Run the Element 0 language tests");
     const run_elz_tests_cmd = b.addRunArtifact(repl_exe);
     run_elz_tests_cmd.addArg("--file");
-    run_elz_tests_cmd.addArg("tests/tests.elz");
+    run_elz_tests_cmd.addArg("tests/test_stdlib.elz");
     test_elz_step.dependOn(&run_elz_tests_cmd.step);
 }
