@@ -1,5 +1,4 @@
-//! This module implements primitive procedures for I/O.
-
+//! This module implements the I/O primitives.
 const std = @import("std");
 const core = @import("../core.zig");
 const writer = @import("../writer.zig");
@@ -9,25 +8,20 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 
 // A custom writer logic for the `display` primitive.
-// It prints strings without quotes and handles Unicode character encoding safely.
+// It prints strings without quotes and ensures a trailing newline is appended
+// when the printed string does not already end with '\n'.
 fn display_writer(value: Value, w: anytype) !void {
     switch (value) {
-        .string => |s| try w.writeAll(s),
-        .character => {
-            const codepoint = value.character;
-            // The value must be a valid Unicode scalar value.
-            if (codepoint > 0x10FFFF or (codepoint >= 0xD800 and codepoint <= 0xDFFF)) {
-                // If the codepoint is invalid, print the standard replacement character.
-                try w.print("", .{});
-                return;
+        .string => |s| {
+            try w.writeAll(s);
+            if (s.len == 0 or s[s.len - 1] != '\n') {
+                try w.writeAll("\n");
             }
-
-            var buf: [4]u8 = undefined;
-            // utf8Encode returns the number of bytes written to the buffer.
-            const len = std.unicode.utf8Encode(@intCast(codepoint), &buf) catch unreachable;
-
-            // Use the returned length to create a slice of the valid bytes.
-            try w.writeAll(buf[0..len]);
+        },
+        .character => {
+            // Delegate character formatting to the existing writer and ensure a newline.
+            try writer.write(value, w);
+            try w.writeAll("\n");
         },
         else => try writer.write(value, w),
     }
@@ -69,7 +63,6 @@ pub fn load(env: *core.Environment, args: core.ValueList) !Value {
 
     const filename = filename_val.string;
     const file = std.fs.cwd().openFile(filename, .{}) catch |err| {
-        // We can use std.log for richer error messages on the host side.
         std.log.err("failed to load file '{s}': {s}", .{ filename, @errorName(err) });
         return ElzError.ForeignFunctionError;
     };

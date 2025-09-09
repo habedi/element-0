@@ -6,6 +6,26 @@ const linenoise = @cImport({
     @cInclude("linenoise.h");
 });
 
+// Zig
+
+// A helper function to display a Value with special handling for strings.
+// It prints strings without quotes and appends a newline if not already present.
+// For all other values, it uses the existing elz.write function and appends a newline.
+fn displayValue(_: *elz.Interpreter, value: elz.Value, writer: anytype) !void {
+    switch (value) {
+        .string => |s| {
+            try writer.writeAll(s);
+            if (s.len == 0 or s[s.len - 1] != '\n') {
+                try writer.writeAll("\n");
+            }
+        },
+        else => {
+            try elz.write(value, writer);
+            try writer.writeAll("\n");
+        },
+    }
+}
+
 /// Executes a string of Element 0 source code.
 /// This function parses and evaluates the source code.
 /// It prints the result of the last evaluated expression.
@@ -30,8 +50,7 @@ fn exec(interpreter: *elz.Interpreter, source: []const u8) !void {
 
     const stdout = std.io.getStdOut().writer();
     if (last_result != .unspecified) {
-        try elz.write(last_result, stdout);
-        try stdout.print("\n", .{});
+        try displayValue(interpreter, last_result, stdout);
     }
 }
 
@@ -87,8 +106,7 @@ fn repl(interpreter: *elz.Interpreter) !void {
             const stdout = std.io.getStdOut().writer();
             // Only print the result if it is not the special 'unspecified' value.
             if (last_result != .unspecified) {
-                try elz.write(last_result, stdout);
-                try stdout.print("\n", .{});
+                try displayValue(interpreter, last_result, stdout);
             }
         }
     }
