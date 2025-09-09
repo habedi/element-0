@@ -29,18 +29,28 @@ pub const Environment = struct {
             .outer = outer,
             .allocator = allocator,
         };
+        // Proactively ensure capacity is non-zero to prevent panics in std.hash_map.
+        try self.bindings.ensureTotalCapacity(8);
         return self;
     }
 
     /// Retrieves a value from the environment.
-    /// It searches the current environment and its outer environments.
+    /// It searches the current environment and its outer environments iteratively.
     ///
     /// - `self`: A pointer to the environment.
     /// - `name`: The symbol name to look up.
     /// - `return`: The value associated with the symbol, or an error if not found.
     pub fn get(self: *const Environment, name: []const u8) ElzError!Value {
-        if (self.bindings.get(name)) |value| return value;
-        if (self.outer) |parent| return parent.get(name);
+        var current_env: ?*const Environment = self;
+        while (current_env) |env| {
+            // Defensively check capacity to prevent panic on a corrupted or empty map.
+            if (env.bindings.capacity() > 0) {
+                if (env.bindings.get(name)) |value| {
+                    return value;
+                }
+            }
+            current_env = env.outer;
+        }
         return ElzError.SymbolNotFound;
     }
 

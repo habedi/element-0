@@ -379,25 +379,35 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     continue;
                 }
 
+                // If no special form matches, it's a procedure call.
                 const proc_val = try eval(&first, env, fuel);
                 const arg_vals = try eval_expr_list(rest, env, fuel);
 
                 switch (proc_val) {
                     .closure => |c| {
                         if (c.params.items.len != arg_vals.items.len) return ElzError.WrongArgumentCount;
-                        const new_env = try Environment.init(env.allocator, c.env);
-                        for (c.params.items, arg_vals.items) |param, arg| {
-                            try new_env.set(param.symbol, arg);
+
+                        var call_env = c.env;
+                        if (c.params.items.len > 0) {
+                            const new_env = try Environment.init(env.allocator, c.env);
+                            for (c.params.items, arg_vals.items) |param, arg| {
+                                try new_env.set(param.symbol, arg);
+                            }
+                            call_env = new_env;
                         }
 
-                        var current_node = c.body;
-                        if (current_node == .nil) return .nil;
-                        while (current_node.pair.cdr != .nil) {
-                            _ = try eval(&current_node.pair.car, new_env, fuel);
-                            current_node = current_node.pair.cdr;
+                        var body_node = c.body;
+                        if (body_node == .nil) return .nil;
+
+                        // Handle multiple expressions in the body.
+                        while (body_node.pair.cdr != .nil) {
+                            _ = try eval(&body_node.pair.car, call_env, fuel);
+                            body_node = body_node.pair.cdr;
                         }
-                        current_ast = &current_node.pair.car;
-                        current_env = new_env;
+
+                        // The last expression becomes the new AST for the tail call.
+                        current_env = call_env;
+                        current_ast = &body_node.pair.car;
                         continue;
                     },
                     .procedure => |prim| return prim(env, arg_vals),
