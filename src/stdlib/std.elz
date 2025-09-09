@@ -19,6 +19,22 @@
 (define (not x)
   (if x #f #t))
 
+;; (!= x y)
+;; Returns #t if x and y are not structurally equal.
+(define (!= x y)
+  (not (equal? x y)))
+
+
+;;; ---------------------------------
+;;; Type Predicates
+;;; ---------------------------------
+
+;; (atom? x)
+;; Returns #t if x is an atom (i.e., not a pair).
+;; Note: This includes numbers, symbols, booleans, and nil.
+(define (atom? x)
+  (not (pair? x)))
+
 
 ;;; ---------------------------------
 ;;; Numeric Functions
@@ -45,6 +61,25 @@
       x
       y))
 
+;; (square x)
+;; Returns the square of a number.
+(define (square x)
+  (* x x))
+
+;; (avg lst)
+;; Returns the average of a list of numbers. Returns 0 for an empty list.
+(define (avg lst)
+  (if (null? lst)
+      0
+      (/ (apply + lst) (length lst))))
+
+;; (fib n)
+;; Returns the n-th number in the Fibonacci sequence (recursively).
+(define (fib n)
+  (cond ((= n 0) 0)
+        ((= n 1) 1)
+        (else (+ (fib (- n 1)) (fib (- n 2))))))
+
 
 ;;; ---------------------------------
 ;;; List Utilities
@@ -64,6 +99,7 @@
 (define (rest x) (cdr x))
 (define (head x) (car x))
 (define (tail x) (cdr x))
+(define (nth k lst) (list-ref lst k))
 
 
 ;; (list-ref lst k)
@@ -79,6 +115,30 @@
   (if (= k 0)
       lst
       (list-tail (cdr lst) (- k 1))))
+
+;; (last-element lst)
+;; Returns the last element in a non-empty list.
+(define (last-element lst)
+  (if (null? (cdr lst))
+      (car lst)
+      (last-element (cdr lst))))
+
+;; (copy-list lst)
+;; Returns a new, shallow copy of a list.
+(define (copy-list lst)
+  (if (null? lst)
+      '()
+      (cons (car lst) (copy-list (cdr lst)))))
+
+;; (indexof item lst)
+;; Returns the 0-based index of the first occurrence of `item` in `lst`.
+;; Returns #f if the item is not found.
+(define (indexof item lst)
+  (letrec ((find (lambda (sublist index)
+                  (cond ((null? sublist) #f)
+                        ((equal? (car sublist) item) index)
+                        (else (find (cdr sublist) (+ index 1)))))))
+    (find lst 0)))
 
 ;; (member obj lst)
 ;; Returns the first sublist of lst whose car is `equal?` to obj.
@@ -173,3 +233,26 @@
   (cond ((null? lst) #t)
         ((not (pred (car lst))) #f)
         (else (every? pred (cdr lst)))))
+
+;; (quicksort lst comparator)
+;; Sorts a list using the quicksort algorithm.
+;; The comparator should be a function like < or >.
+(define (quicksort lst comparator)
+  (if (null? lst)
+      '()
+      (let ((pivot (car lst)))
+        (append (quicksort (filter (lambda (n) (comparator n pivot)) (cdr lst)) comparator)
+                (list pivot)
+                (quicksort (filter (lambda (n) (not (comparator n pivot))) (cdr lst)) comparator)))))
+
+
+;;; ---------------------------------
+;;; Advanced & Demonstrative
+;;; ---------------------------------
+
+;; The Y Combinator (for anonymous recursion)
+(define Y
+  (lambda (f)
+    ((lambda (g) (g g))
+     (lambda (g)
+       (f (lambda (a) ((g g) a)))))))
