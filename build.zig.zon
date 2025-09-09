@@ -7,5 +7,5 @@
         .url = "https://github.com/habedi/chilli/archive/v0.1.0.tar.gz",
         .hash = "chilli-0.1.0-c19PrmQ0AQC0PGmSNJQ98ASPdpBwc8bqK-aBp4WhKL_7",
     } },
-    .paths = .{ "build.zig", "build.zig.zon", "src", "LICENSE", "README.md" },
+    .paths = .{ "build.zig", "build.zig.zon", "src", "external", "LICENSE", "README.md" },
 }
