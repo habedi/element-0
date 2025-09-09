@@ -1,6 +1,14 @@
 ;;
 ;; Element 0 Standard Library
+;; Version: 0.1.0-alpha.2
 ;;
+
+;;; ---------------------------------
+;;; Version Information
+;;; ---------------------------------
+
+(define *elz-stdlib-version* "0.1.0-alpha.2")
+
 
 ;;; ---------------------------------
 ;;; Logical and Boolean Functions
@@ -8,9 +16,6 @@
 
 ;; (not x)
 ;; Returns #f if x is not #f. Otherwise, returns #t.
-;;
-;; - x: The value to negate.
-;; - return: A boolean value.
 (define (not x)
   (if x #f #t))
 
@@ -21,9 +26,6 @@
 
 ;; (abs x)
 ;; Returns the absolute value of a number.
-;;
-;; - x: A number.
-;; - return: The absolute value of x.
 (define (abs x)
   (if (< x 0)
       (- x)
@@ -31,10 +33,6 @@
 
 ;; (max x y)
 ;; Returns the maximum of two numbers.
-;;
-;; - x: A number.
-;; - y: A number.
-;; - return: The maximum of x and y.
 (define (max x y)
   (if (> x y)
       x
@@ -42,10 +40,6 @@
 
 ;; (min x y)
 ;; Returns the minimum of two numbers.
-;;
-;; - x: A number.
-;; - y: A number.
-;; - return: The minimum of x and y.
 (define (min x y)
   (if (< x y)
       x
@@ -57,46 +51,57 @@
 ;;; ---------------------------------
 
 ;; Classic CAR/CDR combinations
-;; (caar x)
-;; Returns the car of the car of x.
-;;
-;; - x: A nested list.
-;; - return: The first element of the first list.
 (define (caar x) (car (car x)))
-
-;; (cadr x)
-;; Returns the car of the cdr of x.
-;;
-;; - x: A list.
-;; - return: The second element of the list.
 (define (cadr x) (car (cdr x)))
-
-;; (cdar x)
-;; Returns the cdr of the car of x.
-;;
-;; - x: A nested list.
-;; - return: The rest of the first list.
 (define (cdar x) (cdr (car x)))
-
-;; (cddr x)
-;; Returns the cdr of the cdr of x.
-;;
-;; - x: A list.
-;; - return: The list without the first two elements.
 (define (cddr x) (cdr (cdr x)))
-
-;; (caddr x)
-;; Returns the car of the cdr of the cdr of x.
-;;
-;; - x: A list.
-;; - return: The third element of the list.
+(define (caadr x) (car (car (cdr x))))
 (define (caddr x) (car (cdr (cdr x))))
+(define (cdddr x) (cdr (cdr (cdr x))))
+
+;; List Accessor Aliases
+(define (first x) (car x))
+(define (rest x) (cdr x))
+(define (head x) (car x))
+(define (tail x) (cdr x))
+
+
+;; (list-ref lst k)
+;; Returns the k-th element of the list (0-indexed).
+(define (list-ref lst k)
+  (if (= k 0)
+      (car lst)
+      (list-ref (cdr lst) (- k 1))))
+
+;; (list-tail lst k)
+;; Returns the sublist of lst starting at the k-th element.
+(define (list-tail lst k)
+  (if (= k 0)
+      lst
+      (list-tail (cdr lst) (- k 1))))
+
+;; (member obj lst)
+;; Returns the first sublist of lst whose car is `equal?` to obj.
+;; Returns #f if obj does not occur in lst.
+(define (member obj lst)
+  (cond ((null? lst) #f)
+        ((equal? obj (car lst)) lst)
+        (else (member obj (cdr lst)))))
+
+;; (assoc obj alist)
+;; Finds a key in an association list.
+(define (assoc obj alist)
+  (cond ((null? alist) #f)
+        ((equal? obj (caar alist)) (car alist))
+        (else (assoc obj (cdr alist)))))
+
+
+;;; ---------------------------------
+;;; Iteration
+;;; ---------------------------------
 
 ;; (for-each proc lst)
 ;; Applies a procedure to each element of a list for its side effects.
-;;
-;; - proc: The procedure to apply.
-;; - lst: The list to iterate over.
 (define (for-each proc lst)
   (if (not (null? lst))
       (begin
@@ -111,23 +116,15 @@
 ;; (filter predicate list)
 ;; Returns a new list containing only the elements of the input list
 ;; for which the predicate returns true.
-;;
-;; - pred: The predicate procedure.
-;; - lst: The list to filter.
-;; - return: A new list with the filtered elements.
 (define (filter pred lst)
-  (cond ((null? lst) '())
-        ((pred (car lst)) (cons (car lst) (filter pred (cdr lst))))
-        (else (filter pred (cdr lst)))))
-
+  (letrec ((filter-iter (lambda (l acc)
+                         (cond ((null? l) (reverse acc))
+                               ((pred (car l)) (filter-iter (cdr l) (cons (car l) acc)))
+                               (else (filter-iter (cdr l) acc))))))
+    (filter-iter lst '())))
 
 ;; (fold-left op initial list)
 ;; Applies a binary operator from left to right over a list.
-;;
-;; - op: The binary operator.
-;; - initial: The initial value.
-;; - lst: The list to fold.
-;; - return: The result of the fold operation.
 (define (fold-left op initial lst)
   (if (null? lst)
       initial
@@ -135,12 +132,21 @@
 
 ;; (fold-right op initial list)
 ;; Applies a binary operator from right to left over a list.
-;;
-;; - op: The binary operator.
-;; - initial: The initial value.
-;; - lst: The list to fold.
-;; - return: The result of the fold operation.
 (define (fold-right op initial lst)
   (if (null? lst)
       initial
       (op (car lst) (fold-right op initial (cdr lst)))))
+
+;; (any? pred lst)
+;; Returns #t if any element in the list satisfies the predicate.
+(define (any? pred lst)
+  (cond ((null? lst) #f)
+        ((pred (car lst)) #t)
+        (else (any? pred (cdr lst)))))
+
+;; (every? pred lst)
+;; Returns #t if every element in the list satisfies the predicate.
+(define (every? pred lst)
+  (cond ((null? lst) #t)
+        ((not (pred (car lst))) #f)
+        (else (every? pred (cdr lst)))))
