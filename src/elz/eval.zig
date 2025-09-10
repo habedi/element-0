@@ -4,8 +4,9 @@ const Value = core.Value;
 const UserDefinedProc = core.UserDefinedProc;
 const Environment = core.Environment;
 const ElzError = @import("errors.zig").ElzError;
+const interpreter = @import("interpreter.zig");
 
-fn eval_expr_list(list: Value, env: *Environment, fuel: *u64) !core.ValueList {
+fn eval_expr_list(interp: *interpreter.Interpreter, list: Value, env: *Environment, fuel: *u64) ElzError!core.ValueList {
     var results = core.ValueList.init(env.allocator);
     var current_node = list;
     while (current_node != .nil) {
@@ -13,19 +14,19 @@ fn eval_expr_list(list: Value, env: *Environment, fuel: *u64) !core.ValueList {
             .pair => |pair_val| pair_val,
             else => return ElzError.InvalidArgument,
         };
-        try results.append(try eval(&p.car, env, fuel));
+        try results.append(try eval(interp, &p.car, env, fuel));
         current_node = p.cdr;
     }
     return results;
 }
 
-pub fn eval_proc(proc: Value, args: core.ValueList, env: *Environment, fuel: *u64) anyerror!Value {
+pub fn eval_proc(interp: *interpreter.Interpreter, proc: Value, args: core.ValueList, env: *Environment, fuel: *u64) ElzError!Value {
     switch (proc) {
         .closure => |c| {
             if (c.params.items.len != args.items.len) return ElzError.WrongArgumentCount;
             const new_env = try Environment.init(env.allocator, c.env);
             for (c.params.items, args.items) |param, arg| {
-                try new_env.set(param.symbol, arg);
+                try new_env.set(interp, param.symbol, arg);
             }
             var result: Value = .nil;
             var current_node = c.body;
@@ -34,22 +35,28 @@ pub fn eval_proc(proc: Value, args: core.ValueList, env: *Environment, fuel: *u6
                     .pair => |pair_val| pair_val,
                     else => return ElzError.InvalidArgument,
                 };
-                result = try eval(&p.car, new_env, fuel);
+                result = try eval(interp, &p.car, new_env, fuel);
                 current_node = p.cdr;
             }
             return result;
         },
-        .procedure => |p| return p(env, args),
-        .foreign_procedure => |ff| return ff(env, args),
+        .procedure => |p| return p(interp, env, args),
+        .foreign_procedure => |ff| {
+            return ff(env, args) catch |err| {
+                interp.last_error_message = @errorName(err);
+                return ElzError.ForeignFunctionError;
+            };
+        },
         else => return ElzError.NotAFunction,
     }
 }
 
-pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerror!Value {
+pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start: *Environment, fuel: *u64) ElzError!Value {
     var current_ast = ast_start;
     var current_env = env_start;
 
     while (true) {
+        interp.last_error_message = null;
         if (fuel.* == 0) return ElzError.ExecutionBudgetExceeded;
         fuel.* -= 1;
 
@@ -59,7 +66,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
         switch (ast.*) {
             .number, .boolean, .character, .nil, .closure, .procedure, .foreign_procedure, .opaque_pointer, .cell, .unspecified => return ast.*,
             .string => |s| return Value{ .string = try env.allocator.dupe(u8, s) },
-            .symbol => |sym| return env.get(sym),
+            .symbol => |sym| return env.get(sym, interp),
             .pair => |p| {
                 const first = p.car;
                 const rest = p.cdr;
@@ -70,7 +77,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         else => return ElzError.QuoteInvalidArguments,
                     };
                     if (p_arg.cdr != .nil) return ElzError.QuoteInvalidArguments;
-                    return p_arg.car.deep_clone(env.allocator);
+                    return try p_arg.car.deep_clone(env.allocator);
                 }
 
                 if (first.is_symbol("if")) {
@@ -84,7 +91,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         else => return ElzError.IfInvalidArguments,
                     };
                     const consequent_expr = p_consequent.car;
-                    const condition = try eval(&test_expr, env, fuel);
+                    const condition = try eval(interp, &test_expr, env, fuel);
 
                     const is_true = switch (condition) {
                         .boolean => |b| b,
@@ -124,13 +131,13 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                             if (body == .nil) return ElzError.InvalidArgument;
                             var current_body_node = body;
                             while (current_body_node.pair.cdr != .nil) {
-                                _ = try eval(&current_body_node.pair.car, env, fuel);
+                                _ = try eval(interp, &current_body_node.pair.car, env, fuel);
                                 current_body_node = current_body_node.pair.cdr;
                             }
                             current_ast = &current_body_node.pair.car;
                             continue;
                         }
-                        const condition = try eval(&test_expr, env, fuel);
+                        const condition = try eval(interp, &test_expr, env, fuel);
                         const is_true = switch (condition) {
                             .boolean => |b| b,
                             else => true,
@@ -140,7 +147,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                             if (body == .nil) return condition;
                             var current_body_node = body;
                             while (current_body_node.pair.cdr != .nil) {
-                                _ = try eval(&current_body_node.pair.car, env, fuel);
+                                _ = try eval(interp, &current_body_node.pair.car, env, fuel);
                                 current_body_node = current_body_node.pair.cdr;
                             }
                             current_ast = &current_body_node.pair.car;
@@ -155,7 +162,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     if (rest == .nil) return Value{ .boolean = true };
                     var current_node = rest;
                     while (current_node.pair.cdr != .nil) {
-                        const result = try eval(&current_node.pair.car, env, fuel);
+                        const result = try eval(interp, &current_node.pair.car, env, fuel);
                         const is_true = switch (result) {
                             .boolean => |b| b,
                             else => true,
@@ -171,7 +178,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     if (rest == .nil) return Value{ .boolean = false };
                     var current_node = rest;
                     while (current_node.pair.cdr != .nil) {
-                        const result = try eval(&current_node.pair.car, env, fuel);
+                        const result = try eval(interp, &current_node.pair.car, env, fuel);
                         const is_true = switch (result) {
                             .boolean => |b| b,
                             else => true,
@@ -197,8 +204,8 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                                 else => return ElzError.DefineInvalidArguments,
                             };
                             if (p_expr.cdr != .nil) return ElzError.DefineInvalidArguments;
-                            const value = try eval(&p_expr.car, env, fuel);
-                            try env.set(symbol_name, value);
+                            const value = try eval(interp, &p_expr.car, env, fuel);
+                            try env.set(interp, symbol_name, value);
                             return value;
                         },
                         .pair => |sig_pair| {
@@ -219,7 +226,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                             const proc = try env.allocator.create(UserDefinedProc);
                             proc.* = .{ .params = params_list_gc, .body = try body.deep_clone(env.allocator), .env = env };
                             const closure = Value{ .closure = proc };
-                            try env.set(fn_name, closure);
+                            try env.set(interp, fn_name, closure);
                             return closure;
                         },
                         else => return ElzError.DefineInvalidSymbol,
@@ -238,8 +245,8 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         else => return ElzError.SetInvalidArguments,
                     };
                     if (p_expr.cdr != .nil) return ElzError.SetInvalidArguments;
-                    const value = try eval(&p_expr.car, env, fuel);
-                    try env.update(symbol.symbol, value);
+                    const value = try eval(interp, &p_expr.car, env, fuel);
+                    try env.update(interp, symbol.symbol, value);
                     return Value.nil;
                 }
 
@@ -271,7 +278,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     var current_node = rest;
                     if (current_node == .nil) return .nil;
                     while (current_node.pair.cdr != .nil) {
-                        _ = try eval(&current_node.pair.car, env, fuel);
+                        _ = try eval(interp, &current_node.pair.car, env, fuel);
                         current_node = current_node.pair.cdr;
                     }
                     current_ast = &current_node.pair.car;
@@ -306,15 +313,15 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         };
                         const init_expr = init_p.car;
                         const eval_env = if (is_let_star) new_env else env;
-                        const value = try eval(&init_expr, eval_env, fuel);
-                        try new_env.set(var_sym.symbol, value);
+                        const value = try eval(interp, &init_expr, eval_env, fuel);
+                        try new_env.set(interp, var_sym.symbol, value);
                         current_binding = binding_p.cdr;
                     }
 
                     var current_body_node = body;
                     if (current_body_node == .nil) return .nil;
                     while (current_body_node.pair.cdr != .nil) {
-                        _ = try eval(&current_body_node.pair.car, new_env, fuel);
+                        _ = try eval(interp, &current_body_node.pair.car, new_env, fuel);
                         current_body_node = current_body_node.pair.cdr;
                     }
                     current_ast = &current_body_node.pair.car;
@@ -356,7 +363,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
 
                         const cell = try env.allocator.create(core.Cell);
                         cell.* = .{ .content = .unspecified };
-                        try new_env.set(var_sym.symbol, Value{ .cell = cell });
+                        try new_env.set(interp, var_sym.symbol, Value{ .cell = cell });
                         try cells.append(cell);
                         try inits.append(init_pair.car);
 
@@ -364,14 +371,14 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     }
 
                     for (cells.items, inits.items) |cell, init| {
-                        const value = try eval(&init, new_env, fuel);
+                        const value = try eval(interp, &init, new_env, fuel);
                         cell.content = value;
                     }
 
                     var current_body_node = body;
                     if (current_body_node == .nil) return .nil;
                     while (current_body_node.pair.cdr != .nil) {
-                        _ = try eval(&current_body_node.pair.car, new_env, fuel);
+                        _ = try eval(interp, &current_body_node.pair.car, new_env, fuel);
                         current_body_node = current_body_node.pair.cdr;
                     }
                     current_ast = &current_body_node.pair.car;
@@ -418,24 +425,24 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     }
 
                     var last_result: core.Value = .unspecified;
-                    var eval_error: ?anyerror = null;
+                    var eval_error: ?ElzError = null;
                     for (try_body_forms.items) |form| {
-                        last_result = eval(&form, env, fuel) catch |err| {
+                        last_result = eval(interp, &form, env, fuel) catch |err| {
                             eval_error = err;
                             break;
                         };
                     }
 
-                    if (eval_error) |err| {
-                        const new_env = try core.Environment.init(env.allocator, env);
-                        const err_name = @errorName(err);
-                        const err_val = core.Value{ .symbol = try env.allocator.dupe(u8, err_name) };
-                        try new_env.set(err_symbol.symbol, err_val);
+                    if (eval_error) |_| {
+                        const new_env = try Environment.init(env.allocator, env);
+                        const msg = interp.last_error_message orelse "An unknown error occurred.";
+                        const err_val = try Value.from(env.allocator, msg);
+                        try new_env.set(interp, err_symbol.symbol, err_val);
                         var current_handler_node = handler_body;
                         var handler_result: core.Value = .unspecified;
                         while (current_handler_node != .nil) {
                             const handler_p = current_handler_node.pair;
-                            handler_result = try eval(&handler_p.car, new_env, fuel);
+                            handler_result = try eval(interp, &handler_p.car, new_env, fuel);
                             current_handler_node = handler_p.cdr;
                         }
                         return handler_result;
@@ -444,8 +451,8 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     }
                 }
 
-                const proc_val = try eval(&first, env, fuel);
-                const arg_vals = try eval_expr_list(rest, env, fuel);
+                const proc_val = try eval(interp, &first, env, fuel);
+                const arg_vals = try eval_expr_list(interp, rest, env, fuel);
 
                 switch (proc_val) {
                     .closure => |c| {
@@ -455,7 +462,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         if (c.params.items.len > 0) {
                             const new_env = try Environment.init(env.allocator, c.env);
                             for (c.params.items, arg_vals.items) |param, arg| {
-                                try new_env.set(param.symbol, arg);
+                                try new_env.set(interp, param.symbol, arg);
                             }
                             call_env = new_env;
                         }
@@ -464,7 +471,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         if (body_node == .nil) return .nil;
 
                         while (body_node.pair.cdr != .nil) {
-                            _ = try eval(&body_node.pair.car, call_env, fuel);
+                            _ = try eval(interp, &body_node.pair.car, call_env, fuel);
                             body_node = body_node.pair.cdr;
                         }
 
@@ -472,8 +479,13 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         current_ast = &body_node.pair.car;
                         continue;
                     },
-                    .procedure => |prim| return prim(env, arg_vals),
-                    .foreign_procedure => |ff| return ff(env, arg_vals),
+                    .procedure => |prim| return prim(interp, env, arg_vals),
+                    .foreign_procedure => |ff| {
+                        return ff(env, arg_vals) catch |err| {
+                            interp.last_error_message = @errorName(err);
+                            return ElzError.ForeignFunctionError;
+                        };
+                    },
                     else => return ElzError.NotAFunction,
                 }
             },

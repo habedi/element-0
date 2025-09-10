@@ -1,11 +1,9 @@
-//! This module implements primitive procedures for type predicates and equality.
-
 const std = @import("std");
 const core = @import("../core.zig");
 const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
+const interpreter = @import("../interpreter.zig");
 
-/// Checks if a value is a proper list.
 fn isProperList(v: Value) bool {
     var cur = v;
     while (cur == .pair) {
@@ -14,7 +12,6 @@ fn isProperList(v: Value) bool {
     return cur == .nil;
 }
 
-/// Checks if two values are equal.
 fn equal_values(a: Value, b: Value) bool {
     switch (a) {
         .nil => return b == .nil,
@@ -102,46 +99,46 @@ fn is_eqv_internal(a: Value, b: Value) bool {
     };
 }
 
-pub fn is_null(_: *core.Environment, args: core.ValueList) !Value {
+pub fn is_null(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .nil };
 }
 
-pub fn is_boolean(_: *core.Environment, args: core.ValueList) !Value {
+pub fn is_boolean(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .boolean };
 }
 
-pub fn is_symbol(_: *core.Environment, args: core.ValueList) !Value {
+pub fn is_symbol(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .symbol };
 }
 
-pub fn is_number(_: *core.Environment, args: core.ValueList) !Value {
+pub fn is_number(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .number };
 }
 
-pub fn is_list(_: *core.Environment, args: core.ValueList) !Value {
+pub fn is_list(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = isProperList(args.items[0]) };
 }
 
-pub fn is_pair(_: *core.Environment, args: core.ValueList) !Value {
+pub fn is_pair(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .pair };
 }
 
-pub fn is_eqv(_: *core.Environment, args: core.ValueList) !Value {
+pub fn is_eqv(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     return Value{ .boolean = is_eqv_internal(args.items[0], args.items[1]) };
 }
 
-pub fn is_eq(env: *core.Environment, args: core.ValueList) !Value {
-    return is_eqv(env, args);
+pub fn is_eq(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+    return is_eqv(interp, env, args);
 }
 
-pub fn is_equal(_: *core.Environment, args: core.ValueList) !Value {
+pub fn is_equal(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     return Value{ .boolean = equal_values(args.items[0], args.items[1]) };
 }

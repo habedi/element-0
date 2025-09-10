@@ -1,13 +1,10 @@
-//! This module implements primitive procedures for string, symbol, and character manipulation.
-
 const std = @import("std");
 const core = @import("../core.zig");
 const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
+const interpreter = @import("../interpreter.zig");
 
-/// The `symbol->string` primitive procedure.
-/// Converts a symbol to a string.
-pub fn symbol_to_string(env: *core.Environment, args: core.ValueList) !Value {
+pub fn symbol_to_string(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const sym = args.items[0];
     if (sym != .symbol) return ElzError.InvalidArgument;
@@ -15,9 +12,7 @@ pub fn symbol_to_string(env: *core.Environment, args: core.ValueList) !Value {
     return Value{ .string = str };
 }
 
-/// The `string->symbol` primitive procedure.
-/// Converts a string to a symbol.
-pub fn string_to_symbol(env: *core.Environment, args: core.ValueList) !Value {
+pub fn string_to_symbol(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const str = args.items[0];
     if (str != .string) return ElzError.InvalidArgument;
@@ -25,20 +20,15 @@ pub fn string_to_symbol(env: *core.Environment, args: core.ValueList) !Value {
     return Value{ .symbol = sym };
 }
 
-/// The `string-length` primitive procedure.
-/// Returns the number of characters in a string.
-pub fn string_length(_: *core.Environment, args: core.ValueList) !Value {
+pub fn string_length(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const str = args.items[0];
     if (str != .string) return ElzError.InvalidArgument;
-    // Note: This function can return an error if the string is not valid UTF-8.
-    const len = try std.unicode.utf8CountCodepoints(str.string);
+    const len = std.unicode.utf8CountCodepoints(str.string) catch return ElzError.InvalidArgument;
     return Value{ .number = @floatFromInt(len) };
 }
 
-/// The `char=?` primitive procedure.
-/// Checks if two characters are equal.
-pub fn char_eq(_: *core.Environment, args: core.ValueList) !Value {
+pub fn char_eq(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const a = args.items[0];
     const b = args.items[1];

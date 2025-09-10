@@ -6,11 +6,6 @@ const linenoise = @cImport({
     @cInclude("linenoise.h");
 });
 
-// Zig
-
-// A helper function to display a Value with special handling for strings.
-// It prints strings without quotes and appends a newline if not already present.
-// For all other values, it uses the existing elz.write function and appends a newline.
 fn displayValue(_: *elz.Interpreter, value: elz.Value, writer: anytype) !void {
     switch (value) {
         .string => |s| {
@@ -26,25 +21,28 @@ fn displayValue(_: *elz.Interpreter, value: elz.Value, writer: anytype) !void {
     }
 }
 
-/// Executes a string of Element 0 source code.
-/// This function parses and evaluates the source code.
-/// It prints the result of the last evaluated expression.
-///
-/// - `interpreter`: A pointer to the interpreter instance.
-/// - `source`: The source code to execute.
 fn exec(interpreter: *elz.Interpreter, source: []const u8) !void {
-    const forms = try elz.parser.readAll(source, interpreter.allocator);
+    const forms = elz.parser.readAll(source, interpreter.allocator) catch |err| {
+        std.debug.print("Parse Error: {s}\n", .{@errorName(err)});
+        return err;
+    };
     if (forms.items.len == 0) return;
 
     var last_result: elz.Value = .nil;
     for (forms.items) |form| {
         var fuel: u64 = 1_000_000;
-        last_result = elz.eval.eval(&form, interpreter.root_env, &fuel) catch |err| {
+        last_result = elz.eval.eval(interpreter, &form, interpreter.root_env, &fuel) catch |err| {
             const stdout = std.io.getStdOut().writer();
-            try stdout.print("Error evaluating form: ", .{});
-            elz.write(form, stdout) catch {};
-            try stdout.print("\nError: {s}\n", .{@errorName(err)});
-            return err;
+            try stdout.print("--- Runtime Error ---\n", .{});
+            if (interpreter.last_error_message) |msg| {
+                try stdout.print("Message: {s}\n", .{msg});
+            } else {
+                try stdout.print("Error: {s}\n", .{@errorName(err)});
+            }
+            try stdout.print("In form: ", .{});
+            try elz.write(form, stdout);
+            try stdout.print("\n", .{});
+            return;
         };
     }
 
@@ -54,11 +52,6 @@ fn exec(interpreter: *elz.Interpreter, source: []const u8) !void {
     }
 }
 
-/// Starts the Read-Eval-Print-Loop (REPL).
-/// This function provides an interactive prompt for the user.
-/// It reads expressions, evaluates them, and prints the results.
-///
-/// - `interpreter`: A pointer to the interpreter instance.
 fn repl(interpreter: *elz.Interpreter) !void {
     const history_path = "history.txt";
     _ = linenoise.linenoiseHistoryLoad(history_path);
@@ -97,14 +90,17 @@ fn repl(interpreter: *elz.Interpreter) !void {
             var last_result: elz.Value = .nil;
             for (forms.items) |form| {
                 var fuel: u64 = 1_000_000;
-                last_result = elz.eval.eval(&form, interpreter.root_env, &fuel) catch |err| {
+                last_result = elz.eval.eval(interpreter, &form, interpreter.root_env, &fuel) catch |err| {
                     const stdout = std.io.getStdOut().writer();
-                    try stdout.print("Runtime Error: {s}\n", .{@errorName(err)});
+                    if (interpreter.last_error_message) |msg| {
+                        try stdout.print("Error: {s}\n", .{msg});
+                    } else {
+                        try stdout.print("Error: {s}\n", .{@errorName(err)});
+                    }
                     break :eval_line;
                 };
             }
             const stdout = std.io.getStdOut().writer();
-            // Only print the result if it is not the special 'unspecified' value.
             if (last_result != .unspecified) {
                 try displayValue(interpreter, last_result, stdout);
             }
@@ -112,11 +108,6 @@ fn repl(interpreter: *elz.Interpreter) !void {
     }
 }
 
-/// The execution entry point for the root command.
-/// This function determines whether to execute a file or start the REPL.
-/// It is called by the chilli command-line parser.
-///
-/// - `ctx`: The command context from the chilli library.
 fn rootExec(ctx: chilli.CommandContext) !void {
     const interpreter = ctx.getContextData(elz.Interpreter).?;
 
@@ -137,9 +128,6 @@ fn rootExec(ctx: chilli.CommandContext) !void {
     try repl(interpreter);
 }
 
-/// The main function for the Element 0 interpreter executable.
-/// This function initializes the interpreter and the command-line interface.
-/// It then runs the root command.
 pub fn main() anyerror!void {
     var interpreter = try elz.Interpreter.init(.{});
 
