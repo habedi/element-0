@@ -1,6 +1,3 @@
-//! This module contains the core evaluation logic for the Element 0 interpreter.
-//! It implements a tail-recursive evaluator for the language's syntax tree.
-
 const std = @import("std");
 const core = @import("core.zig");
 const Value = core.Value;
@@ -8,7 +5,6 @@ const UserDefinedProc = core.UserDefinedProc;
 const Environment = core.Environment;
 const ElzError = @import("errors.zig").ElzError;
 
-/// Evaluates a list of expressions.
 fn eval_expr_list(list: Value, env: *Environment, fuel: *u64) !core.ValueList {
     var results = core.ValueList.init(env.allocator);
     var current_node = list;
@@ -23,7 +19,6 @@ fn eval_expr_list(list: Value, env: *Environment, fuel: *u64) !core.ValueList {
     return results;
 }
 
-/// Evaluates a procedure call.
 pub fn eval_proc(proc: Value, args: core.ValueList, env: *Environment, fuel: *u64) anyerror!Value {
     switch (proc) {
         .closure => |c| {
@@ -50,7 +45,6 @@ pub fn eval_proc(proc: Value, args: core.ValueList, env: *Environment, fuel: *u6
     }
 }
 
-/// Evaluates an AST node in a given environment.
 pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerror!Value {
     var current_ast = ast_start;
     var current_env = env_start;
@@ -342,7 +336,6 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     var inits = std.ArrayList(Value).init(env.allocator);
                     defer inits.deinit();
 
-                    // 1. Create placeholder cells and bind them.
                     var node1 = bindings_list;
                     while (node1 != .nil) {
                         const binding_pair = switch (node1) {
@@ -370,13 +363,11 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         node1 = binding_pair.cdr;
                     }
 
-                    // 2. Evaluate initializers and update cell contents.
                     for (cells.items, inits.items) |cell, init| {
                         const value = try eval(&init, new_env, fuel);
                         cell.content = value;
                     }
 
-                    // 3. Evaluate the body in the new environment with TCO.
                     var current_body_node = body;
                     if (current_body_node == .nil) return .nil;
                     while (current_body_node.pair.cdr != .nil) {
@@ -388,7 +379,71 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     continue;
                 }
 
-                // If no special form matches, it's a procedure call.
+                if (first.is_symbol("try")) {
+                    var try_body_forms = std.ArrayList(core.Value).init(env.allocator);
+                    defer try_body_forms.deinit();
+                    var catch_clause: ?core.Value = null;
+                    var current_node = rest;
+                    while (current_node != .nil) {
+                        const node_p = switch (current_node) {
+                            .pair => |pair_val| pair_val,
+                            else => return ElzError.InvalidArgument,
+                        };
+                        const form = node_p.car;
+                        if (form == .pair and form.pair.car.is_symbol("catch")) {
+                            catch_clause = form;
+                            break;
+                        }
+                        try try_body_forms.append(form);
+                        current_node = node_p.cdr;
+                    }
+
+                    if (catch_clause == null) {
+                        return ElzError.InvalidArgument;
+                    }
+
+                    const catch_p = catch_clause.?.pair;
+                    const catch_args_p = switch (catch_p.cdr) {
+                        .pair => |pair_val| pair_val,
+                        else => return ElzError.InvalidArgument,
+                    };
+
+                    const err_symbol = catch_args_p.car;
+                    if (err_symbol != .symbol) {
+                        return ElzError.InvalidArgument;
+                    }
+                    const handler_body = catch_args_p.cdr;
+                    if (handler_body == .nil) {
+                        return ElzError.InvalidArgument;
+                    }
+
+                    var last_result: core.Value = .unspecified;
+                    var eval_error: ?anyerror = null;
+                    for (try_body_forms.items) |form| {
+                        last_result = eval(&form, env, fuel) catch |err| {
+                            eval_error = err;
+                            break;
+                        };
+                    }
+
+                    if (eval_error) |err| {
+                        const new_env = try core.Environment.init(env.allocator, env);
+                        const err_name = @errorName(err);
+                        const err_val = core.Value{ .symbol = try env.allocator.dupe(u8, err_name) };
+                        try new_env.set(err_symbol.symbol, err_val);
+                        var current_handler_node = handler_body;
+                        var handler_result: core.Value = .unspecified;
+                        while (current_handler_node != .nil) {
+                            const handler_p = current_handler_node.pair;
+                            handler_result = try eval(&handler_p.car, new_env, fuel);
+                            current_handler_node = handler_p.cdr;
+                        }
+                        return handler_result;
+                    } else {
+                        return last_result;
+                    }
+                }
+
                 const proc_val = try eval(&first, env, fuel);
                 const arg_vals = try eval_expr_list(rest, env, fuel);
 
@@ -408,13 +463,11 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                         var body_node = c.body;
                         if (body_node == .nil) return .nil;
 
-                        // Handle multiple expressions in the body.
                         while (body_node.pair.cdr != .nil) {
                             _ = try eval(&body_node.pair.car, call_env, fuel);
                             body_node = body_node.pair.cdr;
                         }
 
-                        // The last expression becomes the new AST for the tail call.
                         current_env = call_env;
                         current_ast = &body_node.pair.car;
                         continue;
