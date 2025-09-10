@@ -44,6 +44,17 @@ pub const Environment = struct {
         return ElzError.SymbolNotFound;
     }
 
+    pub fn contains(self: *const Environment, name: []const u8) bool {
+        var current_env: ?*const Environment = self;
+        while (current_env) |env| {
+            if (env.bindings.contains(name)) {
+                return true;
+            }
+            current_env = env.outer;
+        }
+        return false;
+    }
+
     pub fn set(self: *Environment, interp: *interpreter.Interpreter, name: []const u8, value: Value) ElzError!void {
         const owned_name = try self.allocator.dupe(u8, name);
         const owned_value = try value.deep_clone(self.allocator);
