@@ -98,7 +98,7 @@ fn evalImport(interp: *interpreter.Interpreter, rest: Value, env: *Environment, 
     const path = path_val.string;
 
     if (interp.module_cache.get(path)) |module| {
-        return Value{ .module = module };
+        return core.Value{ .module = module };
     }
 
     const source = std.fs.cwd().readFileAlloc(interp.allocator, path, 1 * 1024 * 1024) catch |e| {
@@ -107,27 +107,35 @@ fn evalImport(interp: *interpreter.Interpreter, rest: Value, env: *Environment, 
     };
     defer interp.allocator.free(source);
 
-    var module_interp_stub = interp.*;
+    var module_interp = interp.*;
     const module_env = try core.Environment.init(interp.allocator, null);
-    module_interp_stub.root_env = module_env;
-    module_interp_stub.last_error_message = null;
+    module_interp.root_env = module_env;
+    module_interp.last_error_message = null;
 
-    try env_setup.populate_globals(&module_interp_stub);
+    try module_env.set(&module_interp, "nil", core.Value.nil);
+    try env_setup.populate_math(&module_interp);
+    try env_setup.populate_lists(&module_interp);
+    try env_setup.populate_predicates(&module_interp);
+    try env_setup.populate_strings(&module_interp);
+    try env_setup.populate_io(&module_interp);
+    try env_setup.populate_control(&module_interp);
+    try env_setup.populate_modules(&module_interp);
+    try env_setup.populate_process(&module_interp);
 
     const std_lib_source = @embedFile("../stdlib/std.elz");
     const std_lib_forms = try parser.readAll(std_lib_source, interp.allocator);
+    var std_fuel: u64 = 1_000_000;
     for (std_lib_forms.items) |form| {
-        var std_fuel: u64 = 1_000_000;
-        _ = try eval(&module_interp_stub, &form, module_env, &std_fuel);
+        _ = try eval(&module_interp, &form, module_env, &std_fuel);
     }
 
     const forms = try parser.readAll(source, interp.allocator);
     for (forms.items) |form| {
-        _ = try eval(&module_interp_stub, &form, module_env, fuel);
+        _ = try eval(&module_interp, &form, module_env, fuel);
     }
 
     const module = try interp.allocator.create(core.Module);
-    module.* = .{ .exports = std.StringHashMap(Value).init(interp.allocator) };
+    module.* = .{ .exports = std.StringHashMap(core.Value).init(interp.allocator) };
 
     var it = module_env.bindings.iterator();
     while (it.next()) |entry| {
@@ -135,7 +143,7 @@ fn evalImport(interp: *interpreter.Interpreter, rest: Value, env: *Environment, 
     }
 
     try interp.module_cache.put(try interp.allocator.dupe(u8, path), module);
-    return Value{ .module = module };
+    return core.Value{ .module = module };
 }
 
 fn evalIf(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value) !Value {

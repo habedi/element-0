@@ -94,5 +94,6 @@ pub fn populate_globals(interp: *interpreter.Interpreter) !void {
 
 pub fn define_foreign_func(env: *core.Environment, name: []const u8, comptime func: anytype) !void {
     const ff = ffi.makeForeignFunc(func);
-    try env.bindings.put(name, core.Value{ .foreign_procedure = ff });
+    const owned_name = try env.allocator.dupe(u8, name);
+    try env.bindings.put(owned_name, core.Value{ .foreign_procedure = ff });
 }
