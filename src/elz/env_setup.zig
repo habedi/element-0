@@ -44,9 +44,10 @@ pub fn populate_predicates(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "boolean?", core.Value{ .procedure = predicates.is_boolean });
     try interp.root_env.set(interp, "symbol?", core.Value{ .procedure = predicates.is_symbol });
     try interp.root_env.set(interp, "number?", core.Value{ .procedure = predicates.is_number });
+    try interp.root_env.set(interp, "string?", core.Value{ .procedure = predicates.is_string });
     try interp.root_env.set(interp, "list?", core.Value{ .procedure = predicates.is_list });
     try interp.root_env.set(interp, "pair?", core.Value{ .procedure = predicates.is_pair });
-
+    try interp.root_env.set(interp, "procedure?", core.Value{ .procedure = predicates.is_procedure });
     try interp.root_env.set(interp, "eq?", core.Value{ .procedure = predicates.is_eq });
     try interp.root_env.set(interp, "eqv?", core.Value{ .procedure = predicates.is_eqv });
     try interp.root_env.set(interp, "equal?", core.Value{ .procedure = predicates.is_equal });

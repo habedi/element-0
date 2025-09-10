@@ -123,6 +123,11 @@ pub fn is_number(_: *interpreter.Interpreter, _: *core.Environment, args: core.V
     return Value{ .boolean = args.items[0] == .number };
 }
 
+pub fn is_string(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = args.items[0] == .string };
+}
+
 pub fn is_list(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = isProperList(args.items[0]) };
@@ -131,6 +136,12 @@ pub fn is_list(_: *interpreter.Interpreter, _: *core.Environment, args: core.Val
 pub fn is_pair(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .pair };
+}
+
+pub fn is_procedure(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    const v = args.items[0];
+    return Value{ .boolean = (v == .procedure or v == .closure or v == .foreign_procedure) };
 }
 
 pub fn is_eqv(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {

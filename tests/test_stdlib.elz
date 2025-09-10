@@ -47,6 +47,13 @@
 (test-case "atom? number" (equal? (atom? 123) #t))
 (test-case "atom? list" (equal? (atom? '(1 2)) #f))
 (test-case "atom? empty-list" (equal? (atom? '()) #t))
+(test-case "string? predicate" (string? "hello"))
+(test-case "procedure? predicate" (procedure? +))
+(test-case "procedure? for lambda" (procedure? (lambda () 1)))
+(test-case "typename string" (equal? (typename "a") "string"))
+(test-case "typename number" (equal? (typename 123) "number"))
+(test-case "typename procedure" (equal? (typename car) "procedure"))
+(test-case "typename nil" (equal? (typename '()) "nil"))
 
 ;; Numeric Functions
 (test-case "abs positive" (equal? (abs 10) 10))

@@ -1,9 +1,9 @@
 ;;
 ;; Element 0 Standard Library
-;; Version: 0.1.0-alpha.2
+;; Version: 0.1.0-alpha.7
 ;;
 
-(define *elz-stdlib-version* "0.1.0-alpha.2")
+(define *elz-stdlib-version* "0.1.0-alpha.7")
 
 ;;; ---------------------------------
 ;;; Logical and Boolean Functions
@@ -21,6 +21,16 @@
 
 (define (atom? x)
   (not (pair? x)))
+
+(define (typename x)
+  (if (null? x) "nil"
+    (if (pair? x) "pair"
+      (if (boolean? x) "boolean"
+        (if (number? x) "number"
+          (if (string? x) "string"
+            (if (symbol? x) "symbol"
+              (if (procedure? x) "procedure"
+                  "unknown"))))))))
 
 ;;; ---------------------------------
 ;;; Numeric Functions
@@ -92,7 +102,7 @@
                       #f
                       (if (equal? (car sublist) item)
                           index
-                          (find (cdr sublist) (+ index 1)))))))
+                          (find (cdr sublist) (+ 1 index)))))))
     (find lst 0)))
 
 (define (member obj lst)
