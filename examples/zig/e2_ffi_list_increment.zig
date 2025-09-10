@@ -53,7 +53,7 @@ pub fn main() !void {
     var interpreter = try elz.Interpreter.init(.{});
     try elz.env_setup.define_foreign_func(interpreter.root_env, "increment-list", increment_list_elements);
     const source = "(increment-list (quote (10 20 30)))";
-    std.debug.print("Evaluating Lisp: {s}\n", .{source});
+    std.debug.print("Evaluating Element 0 code: {s}\n", .{source});
     var fuel: u64 = 1000;
     const result = try interpreter.evalString(source, &fuel);
     const stdout = std.io.getStdOut().writer();
