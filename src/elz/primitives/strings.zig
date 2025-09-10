@@ -4,6 +4,10 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
+/// `symbol_to_string` converts a symbol to a string.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single symbol.
 pub fn symbol_to_string(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const sym = args.items[0];
@@ -12,6 +16,10 @@ pub fn symbol_to_string(_: *interpreter.Interpreter, env: *core.Environment, arg
     return Value{ .string = str };
 }
 
+/// `string_to_symbol` converts a string to a symbol.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single string.
 pub fn string_to_symbol(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const str = args.items[0];
@@ -20,6 +28,10 @@ pub fn string_to_symbol(_: *interpreter.Interpreter, env: *core.Environment, arg
     return Value{ .symbol = sym };
 }
 
+/// `string_length` returns the number of characters in a string.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single string.
 pub fn string_length(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const str = args.items[0];
@@ -28,6 +40,10 @@ pub fn string_length(_: *interpreter.Interpreter, _: *core.Environment, args: co
     return Value{ .number = @floatFromInt(len) };
 }
 
+/// `string_append` concatenates multiple strings into a single string.
+///
+/// Parameters:
+/// - `args`: A `ValueList` of strings to be appended.
 pub fn string_append(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     var buffer = std.ArrayList(u8).init(env.allocator);
     defer buffer.deinit();
@@ -42,6 +58,10 @@ pub fn string_append(_: *interpreter.Interpreter, env: *core.Environment, args: 
     return Value{ .string = try buffer.toOwnedSlice() };
 }
 
+/// `char_eq` checks if two characters are equal.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing two characters.
 pub fn char_eq(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const a = args.items[0];

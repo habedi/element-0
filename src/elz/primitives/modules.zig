@@ -4,6 +4,15 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
+/// `module_ref` is the implementation of the `module-ref` primitive function.
+/// It retrieves an exported value from a module.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
+/// - `args`: A `ValueList` containing two elements: the module object and the symbol to look up.
+///
+/// Returns:
+/// The value of the exported symbol, or an error if the symbol is not found or the arguments are invalid.
 pub fn module_ref(interp: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
 

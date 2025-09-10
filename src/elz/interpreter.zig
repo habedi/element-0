@@ -11,20 +11,43 @@ fn init_gc() void {
     gc.init();
 }
 
+/// `SandboxFlags` is a struct that defines the features to be enabled in the Elz interpreter.
+/// This allows for creating a sandboxed environment with a restricted set of capabilities.
 pub const SandboxFlags = struct {
+    /// Enables or disables mathematical functions.
     enable_math: bool = true,
+    /// Enables or disables list manipulation functions.
     enable_lists: bool = true,
+    /// Enables or disables predicate functions (e.g., `null?`, `pair?`).
     enable_predicates: bool = true,
+    /// Enables or disables string manipulation functions.
     enable_strings: bool = true,
+    /// Enables or disables I/O functions (e.g., `display`, `load`).
     enable_io: bool = true,
 };
 
+/// `Interpreter` is the main struct for the Elz interpreter.
+/// It holds the state of the interpreter, including the root environment, allocator, and module cache.
 pub const Interpreter = struct {
+    /// The memory allocator used by the interpreter.
     allocator: std.mem.Allocator,
+    /// The root environment of the interpreter, containing the built-in functions and variables.
     root_env: *core.Environment,
+    /// A message describing the last error that occurred, if any.
     last_error_message: ?[]const u8 = null,
+    /// A cache for loaded modules to avoid redundant parsing and evaluation.
     module_cache: std.StringHashMap(*core.Module),
 
+    /// Initializes a new Elz interpreter instance.
+    /// This function sets up the garbage collector, creates the root environment,
+    /// populates it with primitive functions based on the provided `SandboxFlags`,
+    /// and loads the standard library.
+    ///
+    /// Parameters:
+    /// - `flags`: A `SandboxFlags` struct specifying which features to enable.
+    ///
+    /// Returns:
+    /// An initialized `Interpreter` instance, or an error if initialization fails.
     pub fn init(flags: SandboxFlags) !Interpreter {
         gc_once.call();
         const allocator = gc.allocator;
@@ -79,6 +102,19 @@ pub const Interpreter = struct {
         return self;
     }
 
+    /// Evaluates a string of Elz source code.
+    /// This function parses the source code into a series of expressions and then evaluates them
+    /// in the interpreter's root environment.
+    ///
+    /// Parameters:
+    /// - `self`: A pointer to the `Interpreter` instance.
+    /// - `source`: A string slice containing the Elz code to evaluate.
+    /// - `fuel`: A pointer to a `u64` value that represents the maximum number of evaluation steps
+    ///           allowed. This is a mechanism to prevent infinite loops. The value is decremented
+    ///           during evaluation.
+    ///
+    /// Returns:
+    /// The `core.Value` of the last evaluated expression, or an error if parsing or evaluation fails.
     pub fn evalString(self: *Interpreter, source: []const u8, fuel: *u64) !core.Value {
         const forms = try parser.readAll(source, self.allocator);
 

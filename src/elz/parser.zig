@@ -7,10 +7,15 @@ const Value = core.Value;
 const ElzError = @import("errors.zig").ElzError;
 
 /// Tokenizes a string of Element 0 source code.
+/// This function breaks the source code into a sequence of tokens, such as
+/// parentheses, symbols, and literals. It also handles comments.
 ///
+/// Parameters:
 /// - `source`: The source code to tokenize.
-/// - `allocator`: The memory allocator to use.
-/// - `return`: An `ArrayList` of tokens.
+/// - `allocator`: The memory allocator to use for the token list.
+///
+/// Returns:
+/// An `ArrayList` of tokens, or an error if tokenization fails.
 fn tokenize(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList([]const u8) {
     var tokens = std.ArrayList([]const u8).init(allocator);
     errdefer tokens.deinit();
@@ -172,10 +177,14 @@ fn parse_atom(token: []const u8, allocator: std.mem.Allocator) ElzError!Value {
 }
 
 /// Reads and parses a single form from a string of source code.
+/// This function is useful for parsing a single expression, such as in a REPL.
 ///
-/// - `source`: The source code to parse.
-/// - `allocator`: The memory allocator to use.
-/// - `return`: The parsed `Value`.
+/// Parameters:
+/// - `source`: The string of source code to parse.
+/// - `allocator`: The memory allocator to use for creating new `Value`s and the token list.
+///
+/// Returns:
+/// The parsed `Value`, or an error if parsing fails (e.g., `ElzError.UnterminatedString`, `ElzError.UnexpectedCloseParen`).
 pub fn read(source: []const u8, allocator: std.mem.Allocator) ElzError!Value {
     var tokens = tokenize(source, allocator) catch |err| {
         return err;
@@ -191,10 +200,14 @@ pub fn read(source: []const u8, allocator: std.mem.Allocator) ElzError!Value {
 }
 
 /// Reads and parses all forms from a string of source code.
+/// This function is useful for parsing a whole file or a block of code.
 ///
-/// - `source`: The source code to parse.
-/// - `allocator`: The memory allocator to use.
-/// - `return`: An `ArrayList` of parsed `Value`s.
+/// Parameters:
+/// - `source`: The string of source code to parse.
+/// - `allocator`: The memory allocator to use for creating new `Value`s and other allocations.
+///
+/// Returns:
+/// An `ArrayList` of parsed `Value`s, or an error if parsing fails.
 pub fn readAll(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList(Value) {
     var tokens = tokenize(source, allocator) catch |err| {
         return err;

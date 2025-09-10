@@ -2,11 +2,32 @@
 ;; Optional list utilities for the Element 0 Standard Library
 ;;
 
+;;; (find pred lst)
+;;;
+;;; Returns the first element in a list that satisfies the predicate.
+;;;
+;;; Parameters:
+;;;   pred: A procedure that takes one argument and returns a boolean.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   The first element that satisfies the predicate, or #f if no such element is found.
 (define (find pred lst)
   (cond ((null? lst) #f)
         ((pred (car lst)) (car lst))
         (else (find pred (cdr lst)))))
 
+;;; (partition pred lst)
+;;;
+;;; Partitions a list into two lists, one containing the elements that
+;;; satisfy the predicate and the other containing the elements that do not.
+;;;
+;;; Parameters:
+;;;   pred: A procedure that takes one argument and returns a boolean.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   A list of two lists: (pass fail).
 (define (partition pred lst)
   (letrec ((part-iter (lambda (l pass fail)
                        (if (null? l)

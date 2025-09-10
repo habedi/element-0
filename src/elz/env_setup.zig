@@ -10,6 +10,10 @@ const modules = @import("./primitives/modules.zig");
 const process = @import("./primitives/process.zig");
 const interpreter = @import("interpreter.zig");
 
+/// Populates the interpreter's root environment with mathematical primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
 pub fn populate_math(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "+", core.Value{ .procedure = math.add });
     try interp.root_env.set(interp, "-", core.Value{ .procedure = math.sub });
@@ -29,6 +33,10 @@ pub fn populate_math(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "min", core.Value{ .procedure = math.min });
 }
 
+/// Populates the interpreter's root environment with list manipulation primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
 pub fn populate_lists(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "cons", core.Value{ .procedure = lists.cons });
     try interp.root_env.set(interp, "car", core.Value{ .procedure = lists.car });
@@ -40,6 +48,10 @@ pub fn populate_lists(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "map", core.Value{ .procedure = lists.map });
 }
 
+/// Populates the interpreter's root environment with predicate primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
 pub fn populate_predicates(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "null?", core.Value{ .procedure = predicates.is_null });
     try interp.root_env.set(interp, "boolean?", core.Value{ .procedure = predicates.is_boolean });
@@ -54,6 +66,10 @@ pub fn populate_predicates(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "equal?", core.Value{ .procedure = predicates.is_equal });
 }
 
+/// Populates the interpreter's root environment with string manipulation primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
 pub fn populate_strings(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "symbol->string", core.Value{ .procedure = strings.symbol_to_string });
     try interp.root_env.set(interp, "string->symbol", core.Value{ .procedure = strings.string_to_symbol });
@@ -62,10 +78,18 @@ pub fn populate_strings(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "char=?", core.Value{ .procedure = strings.char_eq });
 }
 
+/// Populates the interpreter's root environment with control-related primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
 pub fn populate_control(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "apply", core.Value{ .procedure = control.apply });
 }
 
+/// Populates the interpreter's root environment with I/O primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
 pub fn populate_io(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "display", core.Value{ .procedure = io.display });
     try interp.root_env.set(interp, "write", core.Value{ .procedure = io.write_proc });
@@ -73,14 +97,26 @@ pub fn populate_io(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "load", core.Value{ .procedure = io.load });
 }
 
+/// Populates the interpreter's root environment with module-related primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
 pub fn populate_modules(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "module-ref", core.Value{ .procedure = modules.module_ref });
 }
 
+/// Populates the interpreter's root environment with process-related primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
 pub fn populate_process(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "exit", core.Value{ .procedure = process.exit });
 }
 
+/// Populates the interpreter's root environment with all primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
 pub fn populate_globals(interp: *interpreter.Interpreter) !void {
     try populate_math(interp);
     try populate_lists(interp);
@@ -92,6 +128,14 @@ pub fn populate_globals(interp: *interpreter.Interpreter) !void {
     try populate_process(interp);
 }
 
+/// Defines a foreign function in the given environment.
+/// This function uses `ffi.makeForeignFunc` to create a wrapper around a Zig function,
+/// making it callable from Elz.
+///
+/// Parameters:
+/// - `env`: The environment in which to define the foreign function.
+/// - `name`: The name of the function as it will be known in Elz.
+/// - `func`: The Zig function to be exposed to Elz. This must be a comptime-known function.
 pub fn define_foreign_func(env: *core.Environment, name: []const u8, comptime func: anytype) !void {
     const ff = ffi.makeForeignFunc(func);
     const owned_name = try env.allocator.dupe(u8, name);

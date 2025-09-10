@@ -5,12 +5,15 @@ const core = @import("./core.zig");
 const ElzError = @import("./errors.zig").ElzError;
 const Value = core.Value;
 
-/// Converts a Lisp proper list to a Zig slice.
-/// The returned slice is allocated using the provided allocator.
+/// Converts an Element 0 proper list to a Zig slice of `Value`s.
+/// This function is useful for converting data from Elz to a format that is easier to work with in Zig.
 ///
+/// Parameters:
 /// - `allocator`: The memory allocator to use for the new slice.
-/// - `list_head`: The head of the Lisp list (`.pair` or `.nil`).
-/// - `return`: A new slice containing the values from the list.
+/// - `list_head`: The head of the Element 0 list, which must be a proper list (ending in `nil`).
+///
+/// Returns:
+/// A new slice containing the values from the list, or an error if the input is not a proper list.
 pub fn listToSlice(allocator: std.mem.Allocator, list_head: Value) ![]Value {
     var items = std.ArrayList(Value).init(allocator);
 
@@ -26,12 +29,15 @@ pub fn listToSlice(allocator: std.mem.Allocator, list_head: Value) ![]Value {
     return items.toOwnedSlice();
 }
 
-/// Converts a Zig slice of Values to a Lisp proper list.
-/// New pairs are allocated using the provided allocator.
+/// Converts a Zig slice of `Value`s to an Element 0 proper list.
+/// This function is useful for creating Element 0 lists in Zig to be passed to Elz.
 ///
-/// - `allocator`: The memory allocator to use for the list pairs.
-/// - `slice`: The slice of values to convert.
-/// - `return`: The head of a new Lisp list.
+/// Parameters:
+/// - `allocator`: The memory allocator to use for allocating the pairs of the new list.
+/// - `slice`: The slice of `Value`s to convert.
+///
+/// Returns:
+/// The head of a new Element 0 list as a `Value`, or an error if allocation fails.
 pub fn sliceToList(allocator: std.mem.Allocator, slice: []const Value) !Value {
     var head: Value = .nil;
     var i = slice.len;

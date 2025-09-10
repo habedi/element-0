@@ -4,6 +4,7 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
+/// Checks if a value is a proper list (i.e., it ends with `nil`).
 fn isProperList(v: Value) bool {
     var cur = v;
     while (cur == .pair) {
@@ -12,8 +13,8 @@ fn isProperList(v: Value) bool {
     return cur == .nil;
 }
 
-// An iterative implementation of `equal?` that is not vulnerable to stack
-// overflow attacks.
+/// An iterative implementation of `equal?` that is not vulnerable to stack
+/// overflow attacks.
 fn equal_values(allocator: std.mem.Allocator, val1: Value, val2: Value) !bool {
     var stack = std.ArrayList(struct { a: Value, b: Value }).init(allocator);
     defer stack.deinit();
@@ -65,6 +66,7 @@ fn equal_values(allocator: std.mem.Allocator, val1: Value, val2: Value) !bool {
     return true;
 }
 
+/// Internal implementation of `eqv?`.
 fn is_eqv_internal(a: Value, b: Value) bool {
     return switch (a) {
         .nil => b == .nil,
@@ -120,56 +122,106 @@ fn is_eqv_internal(a: Value, b: Value) bool {
     };
 }
 
+/// `is_null` checks if a value is the empty list `()`.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single value.
 pub fn is_null(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .nil };
 }
 
+/// `is_boolean` checks if a value is a boolean (`#t` or `#f`).
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single value.
 pub fn is_boolean(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .boolean };
 }
 
+/// `is_symbol` checks if a value is a symbol.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single value.
 pub fn is_symbol(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .symbol };
 }
 
+/// `is_number` checks if a value is a number.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single value.
 pub fn is_number(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .number };
 }
 
+/// `is_string` checks if a value is a string.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single value.
 pub fn is_string(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .string };
 }
 
+/// `is_list` checks if a value is a proper list.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single value.
 pub fn is_list(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = isProperList(args.items[0]) };
 }
 
+/// `is_pair` checks if a value is a pair.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single value.
 pub fn is_pair(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .pair };
 }
 
+/// `is_procedure` checks if a value is a procedure (primitive, closure, or foreign).
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single value.
 pub fn is_procedure(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const v = args.items[0];
     return Value{ .boolean = (v == .procedure or v == .closure or v == .foreign_procedure) };
 }
 
+/// `is_eqv` checks if two values are equivalent. `eqv?` is a finer-grained
+/// equivalence relation than `equal?`. It returns `#t` if its arguments are `eq?`,
+/// or if they are numbers or characters that are equal.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing two values.
 pub fn is_eqv(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     return Value{ .boolean = is_eqv_internal(args.items[0], args.items[1]) };
 }
 
+/// `is_eq` checks if two values are pointer-equivalent. For immediate values
+/// like numbers and booleans, this is the same as `eqv?`. For heap-allocated
+/// values like pairs and strings, it checks if they are the same object in memory.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing two values.
 pub fn is_eq(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!Value {
     return is_eqv(interp, env, args, fuel);
 }
 
+/// `is_equal` recursively compares two values for structural equality.
+/// It returns `#t` if the values are `eqv?` or if they are pairs, strings, or
+/// symbols with the same structure and content.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing two values.
 pub fn is_equal(interp: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const eql = equal_values(interp.allocator, args.items[0], args.items[1]) catch |err| switch (err) {

@@ -2,6 +2,12 @@ const core = @import("core.zig");
 const std = @import("std");
 const Value = core.Value;
 
+/// `write` prints a `Value` to the given writer in a human-readable format.
+/// This function is used by the `display` and `write` primitive functions, as well as the REPL.
+///
+/// Parameters:
+/// - `value`: The `Value` to be written.
+/// - `writer`: The writer to print to. This can be any `std.io.Writer`.
 pub fn write(value: Value, writer: anytype) !void {
     const aw = writer.any();
     switch (value) {

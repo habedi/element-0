@@ -128,6 +128,9 @@ fn rootExec(ctx: chilli.CommandContext) !void {
     try repl(interpreter);
 }
 
+/// The main entry point for the `elz` executable.
+/// This function initializes the interpreter and the command-line interface.
+/// It can either start a REPL or execute a source file, based on the command-line arguments.
 pub fn main() anyerror!void {
     var interpreter = try elz.Interpreter.init(.{});
 
@@ -136,7 +139,7 @@ pub fn main() anyerror!void {
 
     var root_cmd = try chilli.Command.init(gpa.allocator(), .{
         .name = "elz",
-        .description = "A Lisp dialect implemented in Zig λ",
+        .description = "An Element 0 dialect implemented in Zig λ",
         .version = "0.1.0-alpha.2",
         .exec = rootExec,
     });

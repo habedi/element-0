@@ -4,6 +4,21 @@ const eval = @import("../eval.zig");
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
+/// `apply` is the implementation of the `apply` primitive function in Elz.
+/// It applies a procedure to a list of arguments. The last argument to `apply`
+/// must be a list, which is then used as the arguments to the procedure.
+///
+/// For example: `(apply + '(1 2 3))` is equivalent to `(+ 1 2 3)`.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
+/// - `env`: The environment in which to apply the procedure.
+/// - `args`: The arguments to `apply`, where the first argument is the procedure
+///           and the last argument is the list of arguments for that procedure.
+/// - `fuel`: A pointer to the execution fuel counter.
+///
+/// Returns:
+/// The result of applying the procedure, or an error if the application fails.
 pub fn apply(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!core.Value {
     if (args.items.len < 2) return ElzError.WrongArgumentCount;
 

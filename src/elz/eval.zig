@@ -8,6 +8,7 @@ const interpreter = @import("interpreter.zig");
 const parser = @import("parser.zig");
 const env_setup = @import("env_setup.zig");
 
+/// Evaluates a list of expressions and returns a list of the results.
 fn eval_expr_list(interp: *interpreter.Interpreter, list: Value, env: *Environment, fuel: *u64) ElzError!core.ValueList {
     var results = core.ValueList.init(env.allocator);
     var current_node = list;
@@ -22,6 +23,7 @@ fn eval_expr_list(interp: *interpreter.Interpreter, list: Value, env: *Environme
     return results;
 }
 
+/// Evaluates a `letrec` special form.
 fn evalLetRec(interp: *interpreter.Interpreter, ast: Value, env: *Environment, fuel: *u64) ElzError!Value {
     if (ast != .pair) return ElzError.InvalidArgument;
     const top = ast.pair;
@@ -82,6 +84,7 @@ fn evalLetRec(interp: *interpreter.Interpreter, ast: Value, env: *Environment, f
     return last;
 }
 
+/// Evaluates a `quote` special form.
 fn evalQuote(rest: Value, env: *Environment) !Value {
     const p_arg = switch (rest) {
         .pair => |p_rest| p_rest,
@@ -91,6 +94,7 @@ fn evalQuote(rest: Value, env: *Environment) !Value {
     return try p_arg.car.deep_clone(env.allocator);
 }
 
+/// Evaluates an `import` special form.
 fn evalImport(
     interp: *interpreter.Interpreter,
     rest: core.Value,
@@ -166,6 +170,7 @@ fn evalImport(
     return core.Value{ .module = mod_ptr };
 }
 
+/// Evaluates an `if` special form.
 fn evalIf(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value) !Value {
     const p_test = switch (rest) {
         .pair => |p_rest| p_rest,
@@ -199,6 +204,7 @@ fn evalIf(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel
     }
 }
 
+/// Evaluates a `cond` special form.
 fn evalCond(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value) !Value {
     var current_clause_node = rest;
     while (current_clause_node != .nil) {
@@ -244,6 +250,7 @@ fn evalCond(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fu
     return Value.nil;
 }
 
+/// Evaluates an `and` special form.
 fn evalAnd(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value) !Value {
     if (rest == .nil) return Value{ .boolean = true };
     var current_node = rest;
@@ -260,6 +267,7 @@ fn evalAnd(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fue
     return .unspecified;
 }
 
+/// Evaluates an `or` special form.
 fn evalOr(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value) !Value {
     if (rest == .nil) return Value{ .boolean = false };
     var current_node = rest;
@@ -276,6 +284,7 @@ fn evalOr(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel
     return .unspecified;
 }
 
+/// Evaluates a `define` special form.
 fn evalDefine(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64) !Value {
     const p_name = switch (rest) {
         .pair => |p_rest| p_rest,
@@ -319,6 +328,7 @@ fn evalDefine(interp: *interpreter.Interpreter, rest: Value, env: *Environment, 
     }
 }
 
+/// Evaluates a `set!` special form.
 fn evalSet(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64) !Value {
     const p_sym = switch (rest) {
         .pair => |p_rest| p_rest,
@@ -336,6 +346,7 @@ fn evalSet(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fue
     return Value.nil;
 }
 
+/// Evaluates a `lambda` special form.
 fn evalLambda(rest: Value, env: *Environment) !Value {
     const p_formals = switch (rest) {
         .pair => |p_rest| p_rest,
@@ -360,6 +371,7 @@ fn evalLambda(rest: Value, env: *Environment) !Value {
     return Value{ .closure = proc };
 }
 
+/// Evaluates a `begin` special form.
 fn evalBegin(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value) !Value {
     var current_node = rest;
     if (current_node == .nil) return .nil;
@@ -371,6 +383,7 @@ fn evalBegin(interp: *interpreter.Interpreter, rest: Value, env: *Environment, f
     return .unspecified;
 }
 
+/// Evaluates a `let` or `let*` special form.
 fn evalLet(interp: *interpreter.Interpreter, first: Value, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value, current_env: **Environment) !Value {
     const is_let_star = first.is_symbol("let*");
     const p_bindings = switch (rest) {
@@ -415,6 +428,7 @@ fn evalLet(interp: *interpreter.Interpreter, first: Value, rest: Value, env: *En
     return .unspecified;
 }
 
+/// Evaluates a `try` special form.
 fn evalTry(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64) !Value {
     var try_body_forms = std.ArrayList(core.Value).init(env.allocator);
     defer try_body_forms.deinit();
@@ -481,6 +495,7 @@ fn evalTry(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fue
     }
 }
 
+/// Evaluates a procedure application.
 fn evalApplication(interp: *interpreter.Interpreter, first: Value, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value, current_env: **Environment) !Value {
     const proc_val = try eval(interp, &first, env, fuel);
     const arg_vals = try eval_expr_list(interp, rest, env, fuel);
@@ -521,6 +536,19 @@ fn evalApplication(interp: *interpreter.Interpreter, first: Value, rest: Value, 
     }
 }
 
+/// Applies a procedure to a list of arguments.
+/// This function is used to execute a procedure (either a closure or a primitive) with a given set of arguments.
+/// It is not tail-recursive and should be used when the result of the procedure call is immediately needed.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
+/// - `proc`: The procedure `Value` to apply.
+/// - `args`: A `ValueList` of arguments to apply the procedure with.
+/// - `env`: The environment in which to apply the procedure.
+/// - `fuel`: A pointer to the execution fuel counter.
+///
+/// Returns:
+/// The result of the procedure application, or an error if the application fails.
 pub fn eval_proc(interp: *interpreter.Interpreter, proc: Value, args: core.ValueList, env: *Environment, fuel: *u64) ElzError!Value {
     switch (proc) {
         .closure => |c| {
@@ -553,6 +581,19 @@ pub fn eval_proc(interp: *interpreter.Interpreter, proc: Value, args: core.Value
     }
 }
 
+/// Evaluates an Abstract Syntax Tree (AST) node in a given environment.
+/// This is the main evaluation function of the interpreter. It uses a trampoline loop (`while (true)`)
+/// to achieve tail-call optimization (TCO). Instead of making a recursive call for tail-position
+/// expressions, it updates `current_ast` and `current_env` and continues the loop.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
+/// - `ast_start`: A pointer to the initial AST `Value` to evaluate.
+/// - `env_start`: The initial environment in which to evaluate the AST.
+/// - `fuel`: A pointer to the execution fuel counter. This is decremented on each evaluation step.
+///
+/// Returns:
+/// The result of the evaluation as a `Value`, or an error if evaluation fails.
 pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start: *Environment, fuel: *u64) ElzError!Value {
     var current_ast = ast_start;
     var current_env = env_start;

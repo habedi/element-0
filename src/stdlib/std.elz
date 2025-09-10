@@ -9,9 +9,29 @@
 ;;; Logical and Boolean Functions
 ;;; ---------------------------------
 
+;;; (not x)
+;;;
+;;; Returns #t if x is #f, and #f otherwise.
+;;;
+;;; Parameters:
+;;;   x: Any value.
+;;;
+;;; Returns:
+;;;   A boolean value.
 (define (not x)
   (if x #f #t))
 
+;;; (!= x y)
+;;;
+;;; Returns #t if x and y are not equal, and #f otherwise.
+;;; This is the opposite of `equal?`.
+;;;
+;;; Parameters:
+;;;   x: Any value.
+;;;   y: Any value.
+;;;
+;;; Returns:
+;;;   A boolean value.
 (define (!= x y)
   (not (equal? x y)))
 
@@ -19,9 +39,28 @@
 ;;; Type Predicates
 ;;; ---------------------------------
 
+;;; (atom? x)
+;;;
+;;; Returns #t if x is not a pair, and #f otherwise.
+;;; An atom is any value that is not a cons cell.
+;;;
+;;; Parameters:
+;;;   x: Any value.
+;;;
+;;; Returns:
+;;;   A boolean value.
 (define (atom? x)
   (not (pair? x)))
 
+;;; (typename x)
+;;;
+;;; Returns a string representing the type of x.
+;;;
+;;; Parameters:
+;;;   x: Any value.
+;;;
+;;; Returns:
+;;;   A string, e.g., "nil", "pair", "boolean", "number", etc.
 (define (typename x)
   (if (null? x) "nil"
     (if (pair? x) "pair"
@@ -36,17 +75,53 @@
 ;;; Numeric Functions
 ;;; ---------------------------------
 
+;;; (abs x)
+;;;
+;;; Returns the absolute value of x.
+;;;
+;;; Parameters:
+;;;   x: A number.
+;;;
+;;; Returns:
+;;;   The absolute value of x.
 (define (abs x)
   (if (< x 0) (- x) x))
 
+;;; (square x)
+;;;
+;;; Returns the square of x.
+;;;
+;;; Parameters:
+;;;   x: A number.
+;;;
+;;; Returns:
+;;;   The square of x.
 (define (square x)
   (* x x))
 
+;;; (avg lst)
+;;;
+;;; Returns the average of a list of numbers.
+;;;
+;;; Parameters:
+;;;   lst: A list of numbers.
+;;;
+;;; Returns:
+;;;   The average of the numbers in the list, or 0 if the list is empty.
 (define (avg lst)
   (if (null? lst)
       0
       (/ (apply + lst) (length lst))))
 
+;;; (fib n)
+;;;
+;;; Calculates the nth Fibonacci number.
+;;;
+;;; Parameters:
+;;;   n: A non-negative integer.
+;;;
+;;; Returns:
+;;;   The nth Fibonacci number.
 (define (fib n)
   (letrec ((iter (lambda (count a b)
                    (if (= count 0)
@@ -58,6 +133,10 @@
 ;;; List Utilities
 ;;; ---------------------------------
 
+;;; (caar x) ... (cdddr x)
+;;;
+;;; These are combinations of `car` and `cdr`.
+;;; For example, `(cadr x)` is equivalent to `(car (cdr x))`.
 (define (caar x) (car (car x)))
 (define (cadr x) (car (cdr x)))
 (define (cdar x) (cdr (car x)))
@@ -66,12 +145,37 @@
 (define (caddr x) (car (cdr (cdr x))))
 (define (cdddr x) (cdr (cdr (cdr x))))
 
+;;; (first x)
+;;;
+;;; Alias for `car`.
 (define (first x) (car x))
+;;; (rest x)
+;;;
+;;; Alias for `cdr`.
 (define (rest x) (cdr x))
+;;; (head x)
+;;;
+;;; Alias for `car`.
 (define (head x) (car x))
+;;; (tail x)
+;;;
+;;; Alias for `cdr`.
 (define (tail x) (cdr x))
+;;; (nth k lst)
+;;;
+;;; Alias for `list-ref`.
 (define (nth k lst) (list-ref lst k))
 
+;;; (list-ref lst k)
+;;;
+;;; Returns the element at index k of a list.
+;;;
+;;; Parameters:
+;;;   lst: A list.
+;;;   k: A non-negative integer index.
+;;;
+;;; Returns:
+;;;   The element at index k.
 (define (list-ref lst k)
   (letrec ((iter (lambda (l i)
                    (if (= i 0)
@@ -79,6 +183,16 @@
                        (iter (cdr l) (- i 1))))))
     (iter lst k)))
 
+;;; (list-tail lst k)
+;;;
+;;; Returns the sublist of lst starting at index k.
+;;;
+;;; Parameters:
+;;;   lst: A list.
+;;;   k: A non-negative integer index.
+;;;
+;;; Returns:
+;;;   The sublist of lst starting at index k.
 (define (list-tail lst k)
   (letrec ((iter (lambda (l i)
                    (if (= i 0)
@@ -86,16 +200,44 @@
                        (iter (cdr l) (- i 1))))))
     (iter lst k)))
 
+;;; (last-element lst)
+;;;
+;;; Returns the last element of a list.
+;;;
+;;; Parameters:
+;;;   lst: A non-empty list.
+;;;
+;;; Returns:
+;;;   The last element of the list.
 (define (last-element lst)
   (if (null? (cdr lst))
       (car lst)
       (last-element (cdr lst))))
 
+;;; (copy-list lst)
+;;;
+;;; Creates a shallow copy of a list.
+;;;
+;;; Parameters:
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   A new list that is a shallow copy of lst.
 (define (copy-list lst)
   (if (null? lst)
       '()
       (cons (car lst) (copy-list (cdr lst)))))
 
+;;; (indexof item lst)
+;;;
+;;; Returns the index of the first occurrence of item in a list.
+;;;
+;;; Parameters:
+;;;   item: Any value.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   The index of the item, or #f if the item is not found.
 (define (indexof item lst)
   (letrec ((find (lambda (sublist index)
                   (if (null? sublist)
@@ -105,6 +247,16 @@
                           (find (cdr sublist) (+ 1 index)))))))
     (find lst 0)))
 
+;;; (member obj lst)
+;;;
+;;; Returns the first sublist of lst whose car is equal to obj.
+;;;
+;;; Parameters:
+;;;   obj: Any value.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   The sublist starting with obj, or #f if obj is not found.
 (define (member obj lst)
   (if (null? lst)
       #f
@@ -112,6 +264,16 @@
           lst
           (member obj (cdr lst)))))
 
+;;; (assoc obj alist)
+;;;
+;;; Finds the first pair in an association list whose car is equal to obj.
+;;;
+;;; Parameters:
+;;;   obj: Any value.
+;;;   alist: An association list (a list of pairs).
+;;;
+;;; Returns:
+;;;   The pair whose car is obj, or #f if no such pair is found.
 (define (assoc obj alist)
   (if (null? alist)
       #f
@@ -119,6 +281,16 @@
           (car alist)
           (assoc obj (cdr alist)))))
 
+;;; (take n lst)
+;;;
+;;; Returns the first n elements of a list.
+;;;
+;;; Parameters:
+;;;   n: A non-negative integer.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   A new list containing the first n elements of lst.
 (define (take n lst)
   (letrec ((take-iter (lambda (count l acc)
                        (if (or (= count 0) (null? l))
@@ -128,9 +300,28 @@
                                       (cons (car l) acc))))))
     (take-iter n lst '())))
 
+;;; (drop n lst)
+;;;
+;;; Returns the sublist of lst after dropping the first n elements.
+;;;
+;;; Parameters:
+;;;   n: A non-negative integer.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   The sublist of lst after the first n elements.
 (define (drop n lst)
   (list-tail lst n))
 
+;;; (last-pair lst)
+;;;
+;;; Returns the last pair of a list.
+;;;
+;;; Parameters:
+;;;   lst: A non-empty list.
+;;;
+;;; Returns:
+;;;   The last pair of the list.
 (define (last-pair lst)
   (if (null? (cdr lst))
       lst
@@ -140,6 +331,16 @@
 ;;; Iteration
 ;;; ---------------------------------
 
+;;; (for-each proc lst)
+;;;
+;;; Applies a procedure to each element of a list for its side effects.
+;;;
+;;; Parameters:
+;;;   proc: A procedure that takes one argument.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   An unspecified value.
 (define (for-each proc lst)
   (if (not (null? lst))
       (begin
@@ -150,6 +351,17 @@
 ;;; Higher-Order Functions
 ;;; ---------------------------------
 
+;;; (filter pred lst)
+;;;
+;;; Returns a new list containing only the elements of lst for which the
+;;; predicate `pred` returns a true value.
+;;;
+;;; Parameters:
+;;;   pred: A procedure that takes one argument and returns a boolean.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   A new list.
 (define (filter pred lst)
   (letrec ((filter-iter (lambda (l acc)
                        (if (null? l)
@@ -159,6 +371,17 @@
                                (filter-iter (cdr l) acc))))))
     (filter-iter lst '())))
 
+;;; (fold-left op initial lst)
+;;;
+;;; Applies a binary operator `op` to the elements of a list from left to right.
+;;;
+;;; Parameters:
+;;;   op: A procedure that takes two arguments.
+;;;   initial: The initial value for the accumulator.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   The result of the fold operation.
 (define (fold-left op initial lst)
   (letrec ((iter (lambda (l acc)
                    (if (null? l)
@@ -166,11 +389,32 @@
                        (iter (cdr l) (op acc (car l)))))))
     (iter lst initial)))
 
+;;; (fold-right op initial lst)
+;;;
+;;; Applies a binary operator `op` to the elements of a list from right to left.
+;;;
+;;; Parameters:
+;;;   op: A procedure that takes two arguments.
+;;;   initial: The initial value for the accumulator.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   The result of the fold operation.
 (define (fold-right op initial lst)
   (if (null? lst)
       initial
       (op (car lst) (fold-right op initial (cdr lst)))))
 
+;;; (any? pred lst)
+;;;
+;;; Returns #t if any element in the list satisfies the predicate, and #f otherwise.
+;;;
+;;; Parameters:
+;;;   pred: A procedure that takes one argument and returns a boolean.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   A boolean value.
 (define (any? pred lst)
     (if (null? lst)
         #f
@@ -178,6 +422,16 @@
             #t
             (any? pred (cdr lst)))))
 
+;;; (every? pred lst)
+;;;
+;;; Returns #t if all elements in the list satisfy the predicate, and #f otherwise.
+;;;
+;;; Parameters:
+;;;   pred: A procedure that takes one argument and returns a boolean.
+;;;   lst: A list.
+;;;
+;;; Returns:
+;;;   A boolean value.
 (define (every? pred lst)
     (if (null? lst)
         #t
@@ -185,6 +439,17 @@
             #f
             (every? pred (cdr lst)))))
 
+;;; (quicksort lst comparator)
+;;;
+;;; Sorts a list using the quicksort algorithm.
+;;;
+;;; Parameters:
+;;;   lst: A list.
+;;;   comparator: A procedure that takes two arguments and returns #t if the
+;;;               first is less than the second.
+;;;
+;;; Returns:
+;;;   A new sorted list.
 (define (quicksort lst comparator)
   (if (null? lst)
       '()
@@ -204,6 +469,10 @@
 ;;; Advanced & Demonstrative
 ;;; ---------------------------------
 
+;;; Y
+;;;
+;;; The Y combinator, a higher-order function that can be used to implement
+;;; anonymous recursion.
 (define Y
   (lambda (f)
     ((lambda (g) (g g))

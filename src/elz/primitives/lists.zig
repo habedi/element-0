@@ -5,6 +5,13 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
+/// `cons` creates a new pair.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing two elements, the `car` and the `cdr` of the new pair.
+///
+/// Returns:
+/// A new `Value.pair`.
 pub fn cons(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const p = try env.allocator.create(core.Pair);
@@ -15,6 +22,13 @@ pub fn cons(_: *interpreter.Interpreter, env: *core.Environment, args: core.Valu
     return Value{ .pair = p };
 }
 
+/// `car` returns the first element of a pair.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single pair.
+///
+/// Returns:
+/// The `car` of the pair.
 pub fn car(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const p = args.items[0];
@@ -22,6 +36,13 @@ pub fn car(_: *interpreter.Interpreter, env: *core.Environment, args: core.Value
     return p.pair.car.deep_clone(env.allocator);
 }
 
+/// `cdr` returns the second element of a pair.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single pair.
+///
+/// Returns:
+/// The `cdr` of the pair.
 pub fn cdr(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const p = args.items[0];
@@ -29,6 +50,13 @@ pub fn cdr(_: *interpreter.Interpreter, env: *core.Environment, args: core.Value
     return p.pair.cdr.deep_clone(env.allocator);
 }
 
+/// `list` creates a new list from its arguments.
+///
+/// Parameters:
+/// - `args`: A `ValueList` of elements to be included in the new list.
+///
+/// Returns:
+/// A new list.
 pub fn list(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     var head: core.Value = .nil;
     var i = args.items.len;
@@ -44,6 +72,13 @@ pub fn list(_: *interpreter.Interpreter, env: *core.Environment, args: core.Valu
     return head;
 }
 
+/// `list_length` returns the number of elements in a proper list.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single list.
+///
+/// Returns:
+/// The length of the list as a `Value.number`.
 pub fn list_length(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     var count: f64 = 0;
@@ -59,6 +94,13 @@ pub fn list_length(_: *interpreter.Interpreter, _: *core.Environment, args: core
     return Value{ .number = count };
 }
 
+/// `append` concatenates multiple lists into a single list.
+///
+/// Parameters:
+/// - `args`: A `ValueList` of lists to be appended.
+///
+/// Returns:
+/// A new list containing the elements of all the input lists.
 pub fn append(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len == 0) return Value.nil;
     var result_head: core.Value = .nil;
@@ -95,6 +137,13 @@ pub fn append(_: *interpreter.Interpreter, env: *core.Environment, args: core.Va
     }
 }
 
+/// `reverse` reverses the order of elements in a proper list.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a single list to be reversed.
+///
+/// Returns:
+/// A new list with the elements in reverse order.
 pub fn reverse(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     var head: core.Value = .nil;
@@ -112,6 +161,13 @@ pub fn reverse(_: *interpreter.Interpreter, env: *core.Environment, args: core.V
     return head;
 }
 
+/// `map` applies a procedure to each element of a list and returns a new list with the results.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing two elements: the procedure to apply and the list to map over.
+///
+/// Returns:
+/// A new list containing the results of applying the procedure to each element of the input list.
 pub fn map(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const proc = args.items[0];

@@ -7,6 +7,15 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
+/// `display` is the implementation of the `display` primitive function.
+/// It writes the given value to standard output. For strings and characters,
+/// it writes the raw value. For other types, it uses the `writer.write` function.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing the single value to display.
+///
+/// Returns:
+/// An unspecified value, or an error if writing to stdout fails.
 pub fn display(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
@@ -34,6 +43,14 @@ pub fn display(_: *interpreter.Interpreter, _: *core.Environment, args: core.Val
     return Value.unspecified;
 }
 
+/// `write_proc` is the implementation of the `write` primitive function.
+/// It writes the given value to standard output in a machine-readable format.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing the single value to write.
+///
+/// Returns:
+/// An unspecified value, or an error if writing to stdout fails.
 pub fn write_proc(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
@@ -41,6 +58,14 @@ pub fn write_proc(_: *interpreter.Interpreter, _: *core.Environment, args: core.
     return Value.unspecified;
 }
 
+/// `newline` is the implementation of the `newline` primitive function.
+/// It writes a newline character to standard output.
+///
+/// Parameters:
+/// - `args`: An empty `ValueList`.
+///
+/// Returns:
+/// An unspecified value, or an error if writing to stdout fails.
 pub fn newline(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 0) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
@@ -49,6 +74,17 @@ pub fn newline(_: *interpreter.Interpreter, _: *core.Environment, args: core.Val
     return Value.unspecified;
 }
 
+/// `load` is the implementation of the `load` primitive function.
+/// It reads and evaluates the Elz code from the specified file.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
+/// - `env`: The environment in which to evaluate the loaded code.
+/// - `args`: A `ValueList` containing the filename (a string) to load.
+/// - `fuel`: A pointer to the execution fuel counter.
+///
+/// Returns:
+/// The result of the last evaluated expression in the file, or an error if loading or evaluation fails.
 pub fn load(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const filename_val = args.items[0];
