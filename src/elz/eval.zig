@@ -338,41 +338,31 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
                     const body = p_bindings.cdr;
                     const new_env = try Environment.init(env.allocator, env);
 
-                    var cells = std.ArrayList(*core.Cell).init(env.allocator);
-                    defer cells.deinit();
-                    var inits = std.ArrayList(Value).init(env.allocator);
-                    defer inits.deinit();
-
-                    var node1 = bindings_list;
-                    while (node1 != .nil) {
-                        const binding_pair = switch (node1) {
-                            .pair => |pp| pp,
-                            else => return ElzError.InvalidArgument,
-                        };
-                        const binding = binding_pair.car;
-                        const var_pair = switch (binding) {
-                            .pair => |pp| pp,
-                            else => return ElzError.InvalidArgument,
-                        };
-                        const var_sym = var_pair.car;
-                        if (var_sym != .symbol) return ElzError.InvalidArgument;
-                        const init_pair = switch (var_pair.cdr) {
-                            .pair => |pp| pp,
-                            else => return ElzError.InvalidArgument,
-                        };
-
+                    var current_binding = bindings_list;
+                    while (current_binding != .nil) {
+                        const binding_p = current_binding.pair;
+                        const binding = binding_p.car;
+                        const var_p = binding.pair;
+                        const var_sym = var_p.car;
                         const cell = try env.allocator.create(core.Cell);
                         cell.* = .{ .content = .unspecified };
                         try new_env.set(interp, var_sym.symbol, Value{ .cell = cell });
-                        try cells.append(cell);
-                        try inits.append(init_pair.car);
-
-                        node1 = binding_pair.cdr;
+                        current_binding = binding_p.cdr;
                     }
 
-                    for (cells.items, inits.items) |cell, init| {
-                        const value = try eval(interp, &init, new_env, fuel);
+                    current_binding = bindings_list;
+                    while (current_binding != .nil) {
+                        const binding_p = current_binding.pair;
+                        const binding = binding_p.car;
+                        const var_p = binding.pair;
+                        const var_sym = var_p.car;
+                        const init_p = var_p.cdr.pair;
+                        const init_expr = init_p.car;
+                        const cell_val = new_env.bindings.get(var_sym.symbol).?;
+                        const cell = cell_val.cell;
+                        const value = try eval(interp, &init_expr, new_env, fuel);
                         cell.content = value;
+                        current_binding = binding_p.cdr;
                     }
 
                     var current_body_node = body;
