@@ -6,6 +6,3 @@
 (display name)
 (display "!")
 (newline)
-
-(display "(This is a test of the new I/O system.)")
-(newline)

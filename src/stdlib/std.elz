@@ -1,9 +1,9 @@
 ;;
 ;; Element 0 Standard Library
-;; Version: 0.1.0-alpha.4
+;; Version: 0.1.0-alpha.2
 ;;
 
-(define *elz-stdlib-version* "0.1.0-alpha.4")
+(define *elz-stdlib-version* "0.1.0-alpha.2")
 
 ;;; ---------------------------------
 ;;; Logical and Boolean Functions
@@ -92,7 +92,7 @@
                       #f
                       (if (equal? (car sublist) item)
                           index
-                          (find (cdr sublist) (+ 1 index)))))))
+                          (find (cdr sublist) (+ index 1)))))))
     (find lst 0)))
 
 (define (member obj lst)
@@ -142,9 +142,11 @@
 
 (define (filter pred lst)
   (letrec ((filter-iter (lambda (l acc)
-                         (cond ((null? l) (reverse acc))
-                               ((pred (car l)) (filter-iter (cdr l) (cons (car l) acc)))
-                               (else (filter-iter (cdr l) acc))))))
+                       (if (null? l)
+                           (reverse acc)
+                           (if (pred (car l))
+                               (filter-iter (cdr l) (cons (car l) acc))
+                               (filter-iter (cdr l) acc))))))
     (filter-iter lst '())))
 
 (define (fold-left op initial lst)
@@ -160,18 +162,18 @@
       (op (car lst) (fold-right op initial (cdr lst)))))
 
 (define (any? pred lst)
-  (if (null? lst)
-      #f
-      (if (pred (car lst))
-          #t
-          (any? pred (cdr lst)))))
+    (if (null? lst)
+        #f
+        (if (pred (car lst))
+            #t
+            (any? pred (cdr lst)))))
 
 (define (every? pred lst)
-  (if (null? lst)
-      #t
-      (if (not (pred (car lst)))
-          #f
-          (every? pred (cdr lst)))))
+    (if (null? lst)
+        #t
+        (if (not (pred (car lst)))
+            #f
+            (every? pred (cdr lst)))))
 
 (define (quicksort lst comparator)
   (if (null? lst)
@@ -187,7 +189,6 @@
                                        (partition (cdr l) (cons elem less-than) greater-than)
                                        (partition (cdr l) less-than (cons elem greater-than))))))))
           (partition rest '() '())))))
-
 
 ;;; ---------------------------------
 ;;; Advanced & Demonstrative

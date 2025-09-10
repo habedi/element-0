@@ -64,21 +64,26 @@ Element 0 is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
 
 3. Run an Element 0 script file
     ```sh
-    ./zig-out/bin/elz-repl --file example/elz/e13-hello-world.elz
+    ./zig-out/bin/elz-repl --file examples/elz/e13-hello-world.elz
     ```
 
 -----
 
 ### Documentation
 
-You can find the full API documentation for the latest release of Element 0 [here](https://habedi.github.io/element-0/).
+You can find the full API documentation for the latest release of Elz [here](https://habedi.github.io/element-0/).
 
 Alternatively, you can use the `make docs` command to generate the API documentation for the current version of
-Element 0 from the source code.
+Elz from the source code.
 This will generate HTML documentation in the `docs/api` directory, which you can serve locally with `make serve-docs`
 and view in your web browser at [http://localhost:8000](http://localhost:8000).
 
-### Examples
+#### Standard Library
+
+See the [std.elz](src/stdlib/std.elz) file for the full list of available items (like functions, variables, etc.)
+in the standard library.
+
+#### Examples
 
 Check out the [examples](examples) directory for various usage examples,
 including both Element 0 code and Zig FFI examples.

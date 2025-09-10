@@ -102,9 +102,9 @@ It outlines the features to be implemented and their current status.
 
 ### 4. Advanced Language Features (Post-R5RS)
 
+* [x] **Error Handling**: A mechanism for handling runtime errors, such as `try/catch` or `with-handler`.
 * [ ] **Hygienic Macros**: A `syntax-rules` or similar system for powerful and safe compile-time metaprogramming.
 * [ ] **Module System**: A system for organizing code into reusable and encapsulated modules.
-* [ ] **Error Handling**: A robust mechanism for handling runtime errors, such as `try/catch` or `with-handler`.
 * [ ] `call-with-current-continuation` (`call/cc`): Support for first-class continuations.
 
 ### 5. Better Host Integration and Embeddability
