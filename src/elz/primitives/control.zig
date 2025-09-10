@@ -27,3 +27,27 @@ pub fn apply(interp: *interpreter.Interpreter, env: *core.Environment, args: cor
 
     return eval.eval_proc(interp, proc, final_args, env, fuel);
 }
+
+test "control primitives" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp = interpreter.Interpreter.init(allocator);
+    defer interp.deinit();
+
+    var fuel: u64 = 1000;
+
+    // Test apply
+    const source = "(lambda (x y) (+ x y))";
+    const proc_val = try eval.eval(&interp, &try interp.read(source), interp.root_env, &fuel);
+
+    var args = core.ValueList.init(allocator);
+    try args.append(proc_val);
+    try args.append(core.Value{ .number = 1 });
+
+    const p = try allocator.create(core.Pair);
+    p.* = .{ .car = core.Value{ .number = 2 }, .cdr = .nil };
+    try args.append(core.Value{ .pair = p });
+
+    const result = try apply(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result.number == 3);
+}

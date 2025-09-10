@@ -74,3 +74,29 @@ pub fn load(interp: *interpreter.Interpreter, env: *core.Environment, args: core
 
     return if (last_result == .unspecified) Value.unspecified else last_result;
 }
+
+test "io primitives" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp = interpreter.Interpreter.init(allocator);
+    defer interp.deinit();
+
+    var fuel: u64 = 1000;
+
+    // Test load
+    const filename = "test_load.elz";
+    var file = try std.fs.cwd().createFile(filename, .{});
+    defer file.close();
+    _ = try file.writeAll("(define x 42)");
+
+    var args = core.ValueList.init(allocator);
+    try args.append(Value{ .string = filename });
+
+    _ = try load(&interp, interp.root_env, args, &fuel);
+
+    const x = try interp.root_env.get("x", &interp);
+    try testing.expect(x == Value{ .number = 42 });
+
+    const file_to_delete = std.fs.cwd().deleteFile(filename) catch {};
+    _ = file_to_delete;
+}

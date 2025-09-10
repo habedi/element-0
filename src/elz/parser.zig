@@ -214,3 +214,66 @@ pub fn readAll(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList(
     }
     return forms;
 }
+
+test "parser" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+
+    // Test parsing a number
+    var value = try read("42", allocator);
+    try testing.expect(value == Value{ .number = 42 });
+
+    // Test parsing a symbol
+    value = try read("foo", allocator);
+    try testing.expect(value.is_symbol("foo"));
+
+    // Test parsing a string
+    value = try read("\"hello world\"", allocator);
+    try testing.expect(value == Value{ .string = "hello world" });
+
+    // Test parsing a list
+    value = try read("(+ 1 2)", allocator);
+    if (value != .pair) {
+        testing.log.err("Expected a pair, got {any}", .{value});
+        return error.TestExpectedPair;
+    }
+    var p = value.pair;
+    try testing.expect(p.car.is_symbol("+"));
+    p = p.cdr.pair;
+    try testing.expect(p.car == Value{ .number = 1 });
+    p = p.cdr.pair;
+    try testing.expect(p.car == Value{ .number = 2 });
+    try testing.expect(p.cdr == .nil);
+
+    // Test parsing a quoted expression
+    value = try read("'(1 2)", allocator);
+    if (value != .pair) {
+        testing.log.err("Expected a pair, got {any}", .{value});
+        return error.TestExpectedPair;
+    }
+    p = value.pair;
+    try testing.expect(p.car.is_symbol("quote"));
+    p = p.cdr.pair;
+    const inner_list = p.car;
+    if (inner_list != .pair) {
+        testing.log.err("Expected a pair, got {any}", .{inner_list});
+        return error.TestExpectedPair;
+    }
+    p = inner_list.pair;
+    try testing.expect(p.car == Value{ .number = 1 });
+    p = p.cdr.pair;
+    try testing.expect(p.car == Value{ .number = 2 });
+    try testing.expect(p.cdr == .nil);
+
+    // Test unterminated string error
+    var err = read("\"hello", allocator);
+    try testing.expectError(ElzError.UnterminatedString, err);
+
+    // Test unmatched open paren error
+    err = read("(", allocator);
+    try testing.expectError(ElzError.UnmatchedOpenParen, err);
+
+    // Test unexpected close paren error
+    err = read(")", allocator);
+    try testing.expectError(ElzError.UnexpectedCloseParen, err);
+}

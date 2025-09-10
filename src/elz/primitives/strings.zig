@@ -35,3 +35,36 @@ pub fn char_eq(_: *interpreter.Interpreter, _: *core.Environment, args: core.Val
     if (a != .character or b != .character) return ElzError.InvalidArgument;
     return Value{ .boolean = a.character == b.character };
 }
+
+test "string primitives" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp = interpreter.Interpreter.init(allocator);
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    // Test symbol->string
+    var args = core.ValueList.init(allocator);
+    try args.append(Value{ .symbol = "foo" });
+    var result = try symbol_to_string(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .string = "foo" });
+
+    // Test string->symbol
+    args.clearRetainingCapacity();
+    try args.append(Value{ .string = "bar" });
+    result = try string_to_symbol(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .symbol = "bar" });
+
+    // Test string-length
+    args.clearRetainingCapacity();
+    try args.append(Value{ .string = "hello" });
+    result = try string_length(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .number = 5 });
+
+    // Test char=?
+    args.clearRetainingCapacity();
+    try args.append(Value{ .character = 'a' });
+    try args.append(Value{ .character = 'a' });
+    result = try char_eq(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .boolean = true });
+}

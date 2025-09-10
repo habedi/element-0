@@ -149,3 +149,51 @@ pub fn min(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLi
     }
     return Value{ .number = min_val };
 }
+
+test "math primitives" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp_stub: interpreter.Interpreter = .{
+        .allocator = allocator,
+        .root_env = undefined,
+        .last_error_message = null,
+        .module_cache = undefined,
+    };
+    const env_stub = try core.Environment.init(allocator, null);
+    var fuel: u64 = 1000;
+
+    // Test add
+    var args = core.ValueList.init(allocator);
+    try args.append(Value{ .number = 1 });
+    try args.append(Value{ .number = 2 });
+    var result = try add(&interp_stub, env_stub, args, &fuel);
+    try testing.expect(result == Value{ .number = 3 });
+
+    // Test sub
+    args.clearRetainingCapacity();
+    try args.append(Value{ .number = 5 });
+    try args.append(Value{ .number = 2 });
+    result = try sub(&interp_stub, env_stub, args, &fuel);
+    try testing.expect(result == Value{ .number = 3 });
+
+    // Test mul
+    args.clearRetainingCapacity();
+    try args.append(Value{ .number = 2 });
+    try args.append(Value{ .number = 3 });
+    result = try mul(&interp_stub, env_stub, args, &fuel);
+    try testing.expect(result == Value{ .number = 6 });
+
+    // Test div
+    args.clearRetainingCapacity();
+    try args.append(Value{ .number = 6 });
+    try args.append(Value{ .number = 2 });
+    result = try div(&interp_stub, env_stub, args, &fuel);
+    try testing.expect(result == Value{ .number = 3 });
+
+    // Test div by zero
+    args.clearRetainingCapacity();
+    try args.append(Value{ .number = 6 });
+    try args.append(Value{ .number = 0 });
+    const err = div(&interp_stub, env_stub, args, &fuel);
+    try testing.expectError(ElzError.DivisionByZero, err);
+}

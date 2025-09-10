@@ -12,67 +12,6 @@ fn isProperList(v: Value) bool {
     return cur == .nil;
 }
 
-fn is_equal_values(a: core.Value, b: core.Value) bool {
-    return switch (a) {
-        .number => |an| switch (b) {
-            .number => an == b.number,
-            else => false,
-        },
-        .symbol => |asym| switch (b) {
-            .symbol => std.mem.eql(u8, asym, b.symbol),
-            else => false,
-        },
-        .string => |s| switch (b) {
-            .string => std.mem.eql(u8, s, b.string),
-            else => false,
-        },
-        .boolean => |ab| switch (b) {
-            .boolean => ab == b.boolean,
-            else => false,
-        },
-        .character => |ac| switch (b) {
-            .character => ac == b.character,
-            else => false,
-        },
-        .pair => |ap| switch (b) {
-            .pair => is_equal_values(ap.car, b.pair.car) and is_equal_values(ap.cdr, b.pair.cdr),
-            else => false,
-        },
-        .closure => |c| switch (b) {
-            .closure => c == b.closure,
-            else => false,
-        },
-        .procedure => |p| switch (b) {
-            .procedure => p == b.procedure,
-            else => false,
-        },
-        .foreign_procedure => |fp| switch (b) {
-            .foreign_procedure => fp == b.foreign_procedure,
-            else => false,
-        },
-        .opaque_pointer => |op| switch (b) {
-            .opaque_pointer => op == b.opaque_pointer,
-            else => false,
-        },
-        .cell => |cp| switch (b) {
-            .cell => cp == b.cell,
-            else => false,
-        },
-        .module => |m| switch (b) {
-            .module => m == b.module,
-            else => false,
-        },
-        .nil => switch (b) {
-            .nil => true,
-            else => false,
-        },
-        .unspecified => switch (b) {
-            .unspecified => true,
-            else => false,
-        },
-    };
-}
-
 // An iterative implementation of `equal?` that is not vulnerable to stack
 // overflow attacks.
 fn equal_values(allocator: std.mem.Allocator, val1: Value, val2: Value) !bool {
@@ -84,31 +23,45 @@ fn equal_values(allocator: std.mem.Allocator, val1: Value, val2: Value) !bool {
         const a = pair.a;
         const b = pair.b;
 
-        if (!is_equal_values(a, b)) {
-            return true;
+        // If two values are pointer-equivalent or identical immediate values,
+        // they are equal. This is a fast path.
+        if (is_eqv_internal(a, b)) {
+            continue;
         }
 
+        // If they are not eqv?, their types must be the same to be equal?.
+        if (!std.mem.eql(u8, @tagName(a), @tagName(b))) {
+            return false;
+        }
+
+        // Perform structural comparison based on type.
         switch (a) {
-            .nil => if (b != .nil) return false,
-            .boolean => |av| if (b.boolean != av) return false,
-            .number => |av| if (b.number != av) return false,
-            .character => |av| if (b.character != av) return false,
-            .string => |av| if (!std.mem.eql(u8, av, b.string)) return false,
-            .symbol => |av| if (!std.mem.eql(u8, av, b.symbol)) return false,
-            .pair => |pa| {
-                const pb = b.pair;
-                try stack.append(.{ .a = pa.car, .b = pb.car });
-                try stack.append(.{ .a = pa.cdr, .b = pb.cdr });
+            .string => |s1| {
+                if (!std.mem.eql(u8, s1, b.string)) return false;
             },
-            .cell => |ca| {
-                const cb = b.cell;
-                try stack.append(.{ .a = ca.content, .b = cb.content });
+            .symbol => |s1| {
+                if (!std.mem.eql(u8, s1, b.symbol)) return false;
             },
-            .unspecified => if (b != .unspecified) return false,
-            else => if (!is_eqv_internal(a, b)) return false,
+            .pair => |p1| {
+                const p2 = b.pair;
+                // Push cdr then car, so the stack (LIFO) processes car first.
+                try stack.append(.{ .a = p1.cdr, .b = p2.cdr });
+                try stack.append(.{ .a = p1.car, .b = p2.car });
+            },
+            .cell => |c1| {
+                const c2 = b.cell;
+                try stack.append(.{ .a = c1.content, .b = c2.content });
+            },
+            else => {
+                // For all other types, if they have the same type but are not
+                // `eqv?`, they are not `equal?`. This handles numbers, booleans,
+                // characters, closures, etc.
+                return false;
+            },
         }
     }
 
+    // The stack is empty and we never found a difference, so they are equal.
     return true;
 }
 
@@ -223,4 +176,57 @@ pub fn is_equal(interp: *interpreter.Interpreter, _: *core.Environment, args: co
         error.OutOfMemory => return ElzError.OutOfMemory,
     };
     return Value{ .boolean = eql };
+}
+
+test "predicate primitives" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp = interpreter.Interpreter.init(allocator);
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    // Test is_null
+    var args = core.ValueList.init(allocator);
+    try args.append(Value.nil);
+    var result = try is_null(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .boolean = true });
+
+    args.clearRetainingCapacity();
+    try args.append(Value{ .number = 0 });
+    result = try is_null(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .boolean = false });
+
+    // Test is_boolean
+    args.clearRetainingCapacity();
+    try args.append(Value{ .boolean = true });
+    result = try is_boolean(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .boolean = true });
+
+    // Test is_eq
+    args.clearRetainingCapacity();
+    try args.append(Value{ .number = 1 });
+    try args.append(Value{ .number = 1 });
+    result = try is_eq(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .boolean = true });
+
+    args.clearRetainingCapacity();
+    try args.append(Value{ .number = 1 });
+    try args.append(Value{ .number = 2 });
+    result = try is_eq(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .boolean = false });
+
+    // Test is_equal
+    args.clearRetainingCapacity();
+    const p1 = try allocator.create(core.Pair);
+    p1.* = .{ .car = core.Value{ .number = 1 }, .cdr = .nil };
+    const list1 = core.Value{ .pair = p1 };
+
+    const p2 = try allocator.create(core.Pair);
+    p2.* = .{ .car = core.Value{ .number = 1 }, .cdr = .nil };
+    const list2 = core.Value{ .pair = p2 };
+
+    try args.append(list1);
+    try args.append(list2);
+    result = try is_equal(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .boolean = true });
 }

@@ -151,3 +151,36 @@ pub const Value = union(enum) {
         };
     }
 };
+
+test "core environment" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp_stub: interpreter.Interpreter = .{
+        .allocator = allocator,
+        .root_env = undefined,
+        .last_error_message = null,
+        .module_cache = undefined,
+    };
+
+    // Test set and get in the same environment
+    var env = try Environment.init(allocator, null);
+    try env.set(&interp_stub, "x", Value{ .number = 42 });
+    var value = try env.get("x", &interp_stub);
+    try testing.expect(value == Value{ .number = 42 });
+
+    // Test get from outer environment
+    var outer_env = try Environment.init(allocator, null);
+    try outer_env.set(&interp_stub, "y", Value{ .string = "hello" });
+    var inner_env = try Environment.init(allocator, outer_env);
+    value = try inner_env.get("y", &interp_stub);
+    try testing.expect(value == Value{ .string = "hello" });
+
+    // Test update on outer environment
+    try inner_env.update(&interp_stub, "y", Value{ .string = "world" });
+    value = try outer_env.get("y", &interp_stub);
+    try testing.expect(value == Value{ .string = "world" });
+
+    // Test update on symbol not found
+    const err = inner_env.update(&interp_stub, "z", Value{ .number = 0 });
+    try testing.expectError(ElzError.SymbolNotFound, err);
+}

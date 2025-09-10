@@ -29,3 +29,30 @@ pub fn module_ref(interp: *interpreter.Interpreter, _: *core.Environment, args: 
         return ElzError.SymbolNotFound;
     }
 }
+
+test "module primitives" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp = interpreter.Interpreter.init(allocator);
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    // Test module-ref
+    var module = try allocator.create(core.Module);
+    module.* = .{ .exports = std.StringHashMap(Value).init(allocator) };
+    try module.exports.put("x", Value{ .number = 42 });
+
+    var args = core.ValueList.init(allocator);
+    try args.append(Value{ .module = module });
+    try args.append(Value{ .symbol = "x" });
+
+    const result = try module_ref(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result == Value{ .number = 42 });
+
+    // Test symbol not found
+    args.clearRetainingCapacity();
+    try args.append(Value{ .module = module });
+    try args.append(Value{ .symbol = "y" });
+    const err = module_ref(&interp, interp.root_env, args, &fuel);
+    try testing.expectError(ElzError.SymbolNotFound, err);
+}
