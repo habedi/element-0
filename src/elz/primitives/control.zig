@@ -4,7 +4,7 @@ const eval = @import("../eval.zig");
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
-pub fn apply(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!core.Value {
+pub fn apply(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!core.Value {
     if (args.items.len < 2) return ElzError.WrongArgumentCount;
 
     const proc = args.items[0];
@@ -25,6 +25,5 @@ pub fn apply(interp: *interpreter.Interpreter, env: *core.Environment, args: cor
         current_node = p.cdr;
     }
 
-    var fuel: u64 = 1_000_000;
-    return eval.eval_proc(interp, proc, final_args, env, &fuel);
+    return eval.eval_proc(interp, proc, final_args, env, fuel);
 }

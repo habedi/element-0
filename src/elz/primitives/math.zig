@@ -4,7 +4,7 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
-pub fn add(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn add(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     var sum: f64 = 0;
     for (args.items) |arg| {
         if (arg != .number) return ElzError.InvalidArgument;
@@ -13,7 +13,7 @@ pub fn add(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLi
     return Value{ .number = sum };
 }
 
-pub fn sub(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn sub(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len == 0) return ElzError.WrongArgumentCount;
     if (args.items[0] != .number) return ElzError.InvalidArgument;
     var result = args.items[0].number;
@@ -27,7 +27,7 @@ pub fn sub(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLi
     return Value{ .number = result };
 }
 
-pub fn mul(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn mul(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     var product: f64 = 1;
     for (args.items) |arg| {
         if (arg != .number) return ElzError.InvalidArgument;
@@ -36,14 +36,14 @@ pub fn mul(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLi
     return Value{ .number = product };
 }
 
-pub fn div(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn div(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     if (args.items[0] != .number or args.items[1] != .number) return ElzError.InvalidArgument;
     if (args.items[1].number == 0) return ElzError.DivisionByZero;
     return Value{ .number = args.items[0].number / args.items[1].number };
 }
 
-pub fn le(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn le(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const a = args.items[0];
     const b = args.items[1];
@@ -51,7 +51,7 @@ pub fn le(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLis
     return Value{ .boolean = a.number <= b.number };
 }
 
-pub fn lt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn lt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const a = args.items[0];
     const b = args.items[1];
@@ -59,7 +59,7 @@ pub fn lt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLis
     return Value{ .boolean = a.number < b.number };
 }
 
-pub fn ge(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn ge(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const a = args.items[0];
     const b = args.items[1];
@@ -67,7 +67,7 @@ pub fn ge(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLis
     return Value{ .boolean = a.number >= b.number };
 }
 
-pub fn gt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn gt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const a = args.items[0];
     const b = args.items[1];
@@ -75,7 +75,7 @@ pub fn gt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLis
     return Value{ .boolean = a.number > b.number };
 }
 
-pub fn eq_num(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn eq_num(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const a = args.items[0];
     const b = args.items[1];
@@ -83,38 +83,38 @@ pub fn eq_num(_: *interpreter.Interpreter, _: *core.Environment, args: core.Valu
     return Value{ .boolean = a.number == b.number };
 }
 
-pub fn sqrt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn sqrt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     if (args.items[0] != .number) return ElzError.InvalidArgument;
     return Value{ .number = std.math.sqrt(args.items[0].number) };
 }
 
-pub fn sin(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn sin(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     if (args.items[0] != .number) return ElzError.InvalidArgument;
     return Value{ .number = std.math.sin(args.items[0].number) };
 }
 
-pub fn cos(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn cos(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     if (args.items[0] != .number) return ElzError.InvalidArgument;
     return Value{ .number = std.math.cos(args.items[0].number) };
 }
 
-pub fn tan(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn tan(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     if (args.items[0] != .number) return ElzError.InvalidArgument;
     return Value{ .number = std.math.tan(args.items[0].number) };
 }
 
-pub fn log(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn log(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     if (args.items[0] != .number) return ElzError.InvalidArgument;
     const x = args.items[0].number;
     return Value{ .number = std.math.log(f64, std.math.e, x) };
 }
 
-pub fn max(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn max(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len == 0) return ElzError.WrongArgumentCount;
     var max_val: f64 = -std.math.inf(f64);
     if (args.items[0] == .number) {
@@ -132,7 +132,7 @@ pub fn max(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLi
     return Value{ .number = max_val };
 }
 
-pub fn min(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn min(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len == 0) return ElzError.WrongArgumentCount;
     var min_val: f64 = std.math.inf(f64);
     if (args.items[0] == .number) {

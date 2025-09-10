@@ -89,7 +89,7 @@ pub const UserDefinedProc = struct {
     env: *Environment,
 };
 
-pub const PrimitiveFn = *const fn (interp: *interpreter.Interpreter, env: *Environment, args: ValueList) ElzError!Value;
+pub const PrimitiveFn = *const fn (interp: *interpreter.Interpreter, env: *Environment, args: ValueList, fuel: *u64) ElzError!Value;
 
 pub const Pair = struct {
     car: Value,

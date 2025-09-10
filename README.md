@@ -13,7 +13,7 @@
 [![Zig Version](https://img.shields.io/badge/Zig-0.14.1-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
 [![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
 
-A small embeddable Lisp for the Zig ecosystem l
+A small embeddable Lisp for the Zig ecosystem λ
 
 </div>
 

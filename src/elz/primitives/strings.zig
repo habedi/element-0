@@ -4,7 +4,7 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
-pub fn symbol_to_string(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn symbol_to_string(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const sym = args.items[0];
     if (sym != .symbol) return ElzError.InvalidArgument;
@@ -12,7 +12,7 @@ pub fn symbol_to_string(_: *interpreter.Interpreter, env: *core.Environment, arg
     return Value{ .string = str };
 }
 
-pub fn string_to_symbol(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn string_to_symbol(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const str = args.items[0];
     if (str != .string) return ElzError.InvalidArgument;
@@ -20,7 +20,7 @@ pub fn string_to_symbol(_: *interpreter.Interpreter, env: *core.Environment, arg
     return Value{ .symbol = sym };
 }
 
-pub fn string_length(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn string_length(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const str = args.items[0];
     if (str != .string) return ElzError.InvalidArgument;
@@ -28,7 +28,7 @@ pub fn string_length(_: *interpreter.Interpreter, _: *core.Environment, args: co
     return Value{ .number = @floatFromInt(len) };
 }
 
-pub fn char_eq(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn char_eq(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const a = args.items[0];
     const b = args.items[1];

@@ -7,7 +7,7 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
-pub fn display(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn display(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
     const aw = stdout.any();
@@ -34,14 +34,14 @@ pub fn display(_: *interpreter.Interpreter, _: *core.Environment, args: core.Val
     return Value.unspecified;
 }
 
-pub fn write_proc(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn write_proc(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
     writer.write(args.items[0], stdout) catch return ElzError.ForeignFunctionError;
     return Value.unspecified;
 }
 
-pub fn newline(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn newline(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 0) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
     const aw = stdout.any();
@@ -49,7 +49,7 @@ pub fn newline(_: *interpreter.Interpreter, _: *core.Environment, args: core.Val
     return Value.unspecified;
 }
 
-pub fn load(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn load(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const filename_val = args.items[0];
     if (filename_val != .string) return ElzError.InvalidArgument;
@@ -69,8 +69,7 @@ pub fn load(interp: *interpreter.Interpreter, env: *core.Environment, args: core
 
     var last_result: Value = .unspecified;
     for (forms.items) |form| {
-        var fuel: u64 = 1_000_000;
-        last_result = try eval.eval(interp, &form, env, &fuel);
+        last_result = try eval.eval(interp, &form, env, fuel);
     }
 
     return if (last_result == .unspecified) Value.unspecified else last_result;

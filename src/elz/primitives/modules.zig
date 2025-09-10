@@ -4,7 +4,7 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
-pub fn module_ref(interp: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn module_ref(interp: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
 
     const module_val = args.items[0];

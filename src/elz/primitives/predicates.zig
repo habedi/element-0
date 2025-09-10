@@ -103,57 +103,57 @@ fn is_eqv_internal(a: Value, b: Value) bool {
     };
 }
 
-pub fn is_null(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_null(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .nil };
 }
 
-pub fn is_boolean(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_boolean(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .boolean };
 }
 
-pub fn is_symbol(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_symbol(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .symbol };
 }
 
-pub fn is_number(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_number(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .number };
 }
 
-pub fn is_string(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_string(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .string };
 }
 
-pub fn is_list(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_list(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = isProperList(args.items[0]) };
 }
 
-pub fn is_pair(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_pair(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     return Value{ .boolean = args.items[0] == .pair };
 }
 
-pub fn is_procedure(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_procedure(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const v = args.items[0];
     return Value{ .boolean = (v == .procedure or v == .closure or v == .foreign_procedure) };
 }
 
-pub fn is_eqv(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_eqv(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     return Value{ .boolean = is_eqv_internal(args.items[0], args.items[1]) };
 }
 
-pub fn is_eq(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
-    return is_eqv(interp, env, args);
+pub fn is_eq(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!Value {
+    return is_eqv(interp, env, args, fuel);
 }
 
-pub fn is_equal(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn is_equal(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     return Value{ .boolean = equal_values(args.items[0], args.items[1]) };
 }

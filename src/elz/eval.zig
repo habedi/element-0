@@ -100,7 +100,7 @@ pub fn eval_proc(interp: *interpreter.Interpreter, proc: Value, args: core.Value
             }
             return result;
         },
-        .procedure => |p| return p(interp, env, args),
+        .procedure => |p| return p(interp, env, args, fuel),
         .foreign_procedure => |ff| {
             return ff(env, args) catch |err| {
                 interp.last_error_message = @errorName(err);
@@ -531,7 +531,7 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
                         current_ast = &body_node.pair.car;
                         continue;
                     },
-                    .procedure => |prim| return prim(interp, env, arg_vals),
+                    .procedure => |prim| return prim(interp, env, arg_vals, fuel),
                     .foreign_procedure => |ff| {
                         return ff(env, arg_vals) catch |err| {
                             interp.last_error_message = @errorName(err);

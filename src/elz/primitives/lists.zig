@@ -5,7 +5,7 @@ const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 const interpreter = @import("../interpreter.zig");
 
-pub fn cons(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn cons(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const p = try env.allocator.create(core.Pair);
     p.* = .{
@@ -15,21 +15,21 @@ pub fn cons(_: *interpreter.Interpreter, env: *core.Environment, args: core.Valu
     return Value{ .pair = p };
 }
 
-pub fn car(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn car(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const p = args.items[0];
     if (p != .pair) return ElzError.InvalidArgument;
     return p.pair.car.deep_clone(env.allocator);
 }
 
-pub fn cdr(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn cdr(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const p = args.items[0];
     if (p != .pair) return ElzError.InvalidArgument;
     return p.pair.cdr.deep_clone(env.allocator);
 }
 
-pub fn list(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn list(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     var head: core.Value = .nil;
     var i = args.items.len;
     while (i > 0) {
@@ -44,7 +44,7 @@ pub fn list(_: *interpreter.Interpreter, env: *core.Environment, args: core.Valu
     return head;
 }
 
-pub fn list_length(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn list_length(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     var count: f64 = 0;
     var current = args.items[0];
@@ -59,7 +59,7 @@ pub fn list_length(_: *interpreter.Interpreter, _: *core.Environment, args: core
     return Value{ .number = count };
 }
 
-pub fn append(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn append(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len == 0) return Value.nil;
     var result_head: core.Value = .nil;
     var result_tail: ?*core.Pair = null;
@@ -95,7 +95,7 @@ pub fn append(_: *interpreter.Interpreter, env: *core.Environment, args: core.Va
     }
 }
 
-pub fn reverse(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn reverse(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     var head: core.Value = .nil;
     var current = args.items[0];
@@ -112,7 +112,7 @@ pub fn reverse(_: *interpreter.Interpreter, env: *core.Environment, args: core.V
     return head;
 }
 
-pub fn map(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList) ElzError!Value {
+pub fn map(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const proc = args.items[0];
     const list_val = args.items[1];
@@ -120,7 +120,6 @@ pub fn map(interp: *interpreter.Interpreter, env: *core.Environment, args: core.
     var result_tail: ?*core.Pair = null;
     var arg_list = core.ValueList.init(env.allocator);
     try arg_list.append(.nil);
-    var fuel: u64 = 1_000_000;
     var current_node = list_val;
     while (current_node != .nil) {
         const p_node = switch (current_node) {
@@ -128,7 +127,7 @@ pub fn map(interp: *interpreter.Interpreter, env: *core.Environment, args: core.
             else => return ElzError.InvalidArgument,
         };
         arg_list.items[0] = p_node.car;
-        const mapped_val = try eval.eval_proc(interp, proc, arg_list, env, &fuel);
+        const mapped_val = try eval.eval_proc(interp, proc, arg_list, env, fuel);
         const new_pair = try env.allocator.create(core.Pair);
         new_pair.* = .{ .car = mapped_val, .cdr = .nil };
         if (result_tail) |tail| {
