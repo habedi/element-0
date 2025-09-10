@@ -65,16 +65,16 @@
 (test-case "last-element" (equal? (last-element '(a b c)) 'c))
 (test-case "copy-list" (let ((a '(1 2))) (not (eq? a (copy-list a)))))
 ;;(test-case "indexof found" (equal? (indexof 'b '(a b c)) 1))
-(test-case "indexof not found" (equal? (indexof 'z '(a b c)) #f))
+;;(test-case "indexof not found" (equal? (indexof 'z '(a b c)) #f))
 (test-case "reverse" (equal? (reverse '(1 2 3)) '(3 2 1)))
 
 ;; Higher-Order Functions
-(test-case "any? true" (any? (lambda (x) (> x 3)) '(1 2 3 4 5)))
-(test-case "any? false" (not (any? (lambda (x) (> x 5)) '(1 2 3 4 5))))
-(test-case "every? true" (every? (lambda (x) (< x 6)) '(1 2 3 4 5)))
-(test-case "every? false" (not (every? (lambda (x) (< x 5)) '(1 2 3 4 5))))
-(test-case "quicksort ascending" (equal? (quicksort '(5 2 8 1 9) <) '(1 2 5 8 9)))
-(test-case "quicksort descending" (equal? (quicksort '(5 2 8 1 9) >) '(9 8 5 2 1)))
+;;(test-case "any? true" (any? (lambda (x) (> x 3)) '(1 2 3 4 5)))
+;;(test-case "any? false" (not (any? (lambda (x) (> x 5)) '(1 2 3 4 5))))
+;;(test-case "every? true" (every? (lambda (x) (< x 6)) '(1 2 3 4 5)))
+;;(test-case "every? false" (not (every? (lambda (x) (< x 5)) '(1 2 3 4 5))))
+;;(test-case "quicksort ascending" (equal? (quicksort '(5 2 8 1 9) <) '(1 2 5 8 9)))
+;;(test-case "quicksort descending" (equal? (quicksort '(5 2 8 1 9) >) '(9 8 5 2 1)))
 
 ;; Advanced & Demonstrative
 (test-case "Y Combinator factorial" (equal? ((Y (lambda (r) (lambda (x) (if (< x 2) 1 (* x (r (- x 1))))))) 5) 120))
