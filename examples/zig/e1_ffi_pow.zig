@@ -7,7 +7,7 @@ fn zig_pow(base: f64, exp: f64) f64 {
 
 pub fn main() !void {
     var interpreter = try elz.Interpreter.init(.{});
-    try elz.env_setup.define_foreign_func(interpreter.root_env, "zig-pow", zig_pow);
+    try elz.define_foreign_func(interpreter.root_env, "zig-pow", zig_pow);
     const source = "(zig-pow 2 8)";
     std.debug.print("Evaluating Element 0 code: {s}\n", .{source});
     var fuel: u64 = 1000;

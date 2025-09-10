@@ -36,7 +36,7 @@ fn sum_of_squares(
 pub fn main() !void {
     var interpreter = try elz.Interpreter.init(.{});
 
-    try elz.env_setup.define_foreign_func(interpreter.root_env, "sum-of-squares", sum_of_squares);
+    try elz.define_foreign_func(interpreter.root_env, "sum-of-squares", sum_of_squares);
 
     const source = "(sum-of-squares (quote (1 2 3 4)))";
     std.debug.print("Evaluating: {s}\n", .{source});

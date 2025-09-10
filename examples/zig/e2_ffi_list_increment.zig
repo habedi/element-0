@@ -1,7 +1,7 @@
 const std = @import("std");
 const elz = @import("elz");
 
-fn increment_list_elements(allocator: std.mem.Allocator, args: []const elz.core.Value) !elz.core.Value {
+fn increment_list_elements(allocator: std.mem.Allocator, args: []const elz.Value) !elz.Value {
     if (args.len != 1) {
         return elz.ElzError.WrongArgumentCount;
     }
@@ -28,22 +28,22 @@ fn increment_list_elements(allocator: std.mem.Allocator, args: []const elz.core.
         n.* += 1.0;
     }
     if (numbers.items.len == 0) {
-        return elz.core.Value.nil;
+        return elz.Value.nil;
     }
     const head_pair = try allocator.create(elz.core.Pair);
     head_pair.* = .{
-        .car = elz.core.Value{ .number = numbers.items[0] },
-        .cdr = elz.core.Value.nil,
+        .car = elz.Value{ .number = numbers.items[0] },
+        .cdr = elz.Value.nil,
     };
-    const new_list_head = elz.core.Value{ .pair = head_pair };
+    const new_list_head = elz.Value{ .pair = head_pair };
     var tail_pair = head_pair;
     for (numbers.items[1..]) |num| {
         const next_pair = try allocator.create(elz.core.Pair);
         next_pair.* = .{
-            .car = elz.core.Value{ .number = num },
-            .cdr = elz.core.Value.nil,
+            .car = elz.Value{ .number = num },
+            .cdr = elz.Value.nil,
         };
-        tail_pair.cdr = elz.core.Value{ .pair = next_pair };
+        tail_pair.cdr = elz.Value{ .pair = next_pair };
         tail_pair = next_pair;
     }
     return new_list_head;
@@ -51,7 +51,7 @@ fn increment_list_elements(allocator: std.mem.Allocator, args: []const elz.core.
 
 pub fn main() !void {
     var interpreter = try elz.Interpreter.init(.{});
-    try elz.env_setup.define_foreign_func(interpreter.root_env, "increment-list", increment_list_elements);
+    try elz.define_foreign_func(interpreter.root_env, "increment-list", increment_list_elements);
     const source = "(increment-list (quote (10 20 30)))";
     std.debug.print("Evaluating Element 0 code: {s}\n", .{source});
     var fuel: u64 = 1000;
