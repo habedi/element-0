@@ -104,5 +104,19 @@
                (let ((f (make))) (f 5))))
            7) 12))
 
+;; --- Module System Tests ---
+(define test-mod (import "tests/test_module_lib.elz"))
+
+(test-case "module import and var reference"
+  (equal? (module-ref test-mod 'test-var) 42))
+
+(test-case "module function reference and call"
+  (let ((f (module-ref test-mod 'test-func)))
+    (equal? (f 8) 50)))
+
+(test-case "module symbol not found"
+  (equal? (try (module-ref test-mod 'non-existent) (catch err #t))
+          #t))
+
 ;; --- Run Summary ---
 (report-summary)

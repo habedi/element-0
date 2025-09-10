@@ -1,0 +1,18 @@
+;;
+;; Optional list utilities for the Element 0 Standard Library
+;;
+
+(define (find pred lst)
+  (cond ((null? lst) #f)
+        ((pred (car lst)) (car lst))
+        (else (find pred (cdr lst)))))
+
+(define (partition pred lst)
+  (letrec ((part-iter (lambda (l pass fail)
+                       (if (null? l)
+                           (list (reverse pass) (reverse fail))
+                           (let ((elem (car l)))
+                             (if (pred elem)
+                                 (part-iter (cdr l) (cons elem pass) fail)
+                                 (part-iter (cdr l) pass (cons elem fail))))))))
+    (part-iter lst '() '())))

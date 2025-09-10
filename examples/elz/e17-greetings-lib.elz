@@ -1,0 +1,4 @@
+(define message "This is a message from an external module.")
+
+(define (make-greeting name)
+  (string-append "Hello, " name ", from the greetings module!"))
