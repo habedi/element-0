@@ -7,6 +7,10 @@ const gc = @import("gc.zig");
 
 pub const ValueList = gc.GcArrayList(Value);
 
+pub const Module = struct {
+    exports: std.StringHashMap(Value),
+};
+
 pub const Cell = struct {
     content: Value,
 };
@@ -104,6 +108,7 @@ pub const Value = union(enum) {
     foreign_procedure: *const fn (env: *Environment, args: ValueList) anyerror!Value,
     opaque_pointer: ?*anyopaque,
     cell: *Cell,
+    module: *Module,
     nil,
     unspecified,
 
@@ -117,7 +122,7 @@ pub const Value = union(enum) {
     pub fn deep_clone(self: Value, allocator: std.mem.Allocator) !Value {
         return switch (self) {
             .symbol => |s| Value{ .symbol = try allocator.dupe(u8, s) },
-            .number, .boolean, .character, .closure, .procedure, .foreign_procedure, .opaque_pointer, .cell, .nil, .unspecified => self,
+            .number, .boolean, .character, .closure, .procedure, .foreign_procedure, .opaque_pointer, .cell, .module, .nil, .unspecified => self,
             .string => |s| Value{ .string = try allocator.dupe(u8, s) },
             .pair => |p| {
                 const new_pair = try allocator.create(Pair);

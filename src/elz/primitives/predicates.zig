@@ -35,7 +35,7 @@ fn equal_values(a: Value, b: Value) bool {
             .symbol => |bv| std.mem.eql(u8, av, bv),
             else => false,
         },
-        .closure, .procedure, .foreign_procedure, .opaque_pointer => return is_eqv_internal(a, b),
+        .closure, .procedure, .foreign_procedure, .opaque_pointer, .module => return is_eqv_internal(a, b),
         .pair => |pa| return switch (b) {
             .pair => |pb| equal_values(pa.car, pb.car) and equal_values(pa.cdr, pb.cdr),
             else => false,
@@ -93,6 +93,10 @@ fn is_eqv_internal(a: Value, b: Value) bool {
         },
         .cell => |av| switch (b) {
             .cell => |bv| av == bv,
+            else => false,
+        },
+        .module => |av| switch (b) {
+            .module => |bv| av == bv,
             else => false,
         },
         .unspecified => b == .unspecified,

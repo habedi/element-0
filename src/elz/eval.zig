@@ -5,6 +5,8 @@ const UserDefinedProc = core.UserDefinedProc;
 const Environment = core.Environment;
 const ElzError = @import("errors.zig").ElzError;
 const interpreter = @import("interpreter.zig");
+const parser = @import("parser.zig");
+const env_setup = @import("env_setup.zig");
 
 fn eval_expr_list(interp: *interpreter.Interpreter, list: Value, env: *Environment, fuel: *u64) ElzError!core.ValueList {
     var results = core.ValueList.init(env.allocator);
@@ -20,71 +22,60 @@ fn eval_expr_list(interp: *interpreter.Interpreter, list: Value, env: *Environme
     return results;
 }
 
-fn evalLetRec(interp: *interpreter.Interpreter, form_list: Value, env: *core.Environment, fuel: *u64) ElzError!core.Value {
-    if (fuel.* == 0) return ElzError.ExecutionBudgetExceeded;
-    fuel.* -= 1;
+fn evalLetRec(interp: *interpreter.Interpreter, ast: Value, env: *Environment, fuel: *u64) ElzError!Value {
+    if (ast != .pair) return ElzError.InvalidArgument;
+    const top = ast.pair;
+    const rest = top.cdr;
+    if (rest == .nil or rest != .pair) return ElzError.InvalidArgument;
 
-    if (form_list != .pair) return ElzError.InvalidArgument;
-    const after_head = form_list.pair.cdr;
+    const bindings_and_body = rest.pair;
+    const bindings_val = bindings_and_body.car;
+    const body_list = bindings_and_body.cdr;
 
-    if (after_head == .nil or after_head != .pair) return ElzError.InvalidArgument;
+    const new_env = try Environment.init(env.allocator, env);
 
-    const bindings_node = after_head.pair.car;
-    const body_nodes = after_head.pair.cdr;
-
-    var new_env = try core.Environment.init(env.allocator, env);
-
-    const max_bindings = 128;
-    var cells: [max_bindings]*core.Cell = undefined;
-    var rhs_exprs: [max_bindings]core.Value = undefined;
-    var names: [max_bindings][]const u8 = undefined;
-    var count: usize = 0;
-
-    var b_iter = bindings_node;
-    while (b_iter != .nil) {
-        if (b_iter != .pair) return ElzError.InvalidArgument;
-        const binding_form = b_iter.pair.car;
-        if (binding_form != .pair) return ElzError.InvalidArgument;
-
-        const name_val = binding_form.pair.car;
-        const rest1 = binding_form.pair.cdr;
-        if (name_val != .symbol) return ElzError.InvalidArgument;
-        if (rest1 == .nil or rest1 != .pair) return ElzError.InvalidArgument;
-
-        const expr_val = rest1.pair.car;
-        const rest2 = rest1.pair.cdr;
-        if (rest2 != .nil) return ElzError.InvalidArgument;
-
-        if (count >= max_bindings) return ElzError.InvalidArgument;
-
-        const cell_ptr = try new_env.allocator.create(core.Cell);
-        cell_ptr.* = .{ .content = core.Value.unspecified };
-        cells[count] = cell_ptr;
-        rhs_exprs[count] = expr_val;
-        names[count] = name_val.symbol;
-
-        try new_env.set(interp, name_val.symbol, core.Value{ .cell = cell_ptr });
-
-        count += 1;
-        b_iter = b_iter.pair.cdr;
+    var current_binding_node = bindings_val;
+    while (current_binding_node != .nil) {
+        if (current_binding_node != .pair) return ElzError.InvalidArgument;
+        const binding_cell = current_binding_node.pair;
+        const binding = binding_cell.car;
+        if (binding != .pair) return ElzError.InvalidArgument;
+        const var_init = binding.pair;
+        const var_sym_val = var_init.car;
+        if (var_sym_val != .symbol) return ElzError.InvalidArgument;
+        try new_env.set(interp, var_sym_val.symbol, Value.unspecified);
+        current_binding_node = binding_cell.cdr;
     }
 
-    var i: usize = 0;
-    while (i < count) : (i += 1) {
-        var rhs_form = rhs_exprs[i];
-        const evaluated = try eval(interp, &rhs_form, new_env, fuel);
-        cells[i].content = try evaluated.deep_clone(new_env.allocator);
+    current_binding_node = bindings_val;
+    while (current_binding_node != .nil) {
+        const binding_cell = current_binding_node.pair;
+        const binding = binding_cell.car;
+        const var_init = binding.pair;
+        const var_sym_val = var_init.car;
+        const init_tail = var_init.cdr;
+        if (init_tail == .nil or init_tail != .pair) return ElzError.InvalidArgument;
+        const init_pair = init_tail.pair;
+        var init_expr = init_pair.car;
+        if (init_pair.cdr != .nil) return ElzError.InvalidArgument;
+
+        const value = try eval(interp, &init_expr, new_env, fuel);
+        try new_env.update(interp, var_sym_val.symbol, value);
+
+        current_binding_node = binding_cell.cdr;
     }
 
-    if (body_nodes == .nil) return core.Value.unspecified;
+    if (body_list == .nil) return Value.nil;
 
-    var last: core.Value = .unspecified;
-    var body_iter = body_nodes;
-    while (body_iter != .nil) {
-        if (body_iter != .pair) return ElzError.InvalidArgument;
-        var body_form = body_iter.pair.car;
-        last = try eval(interp, &body_form, new_env, fuel);
-        body_iter = body_iter.pair.cdr;
+    var body_node = body_list;
+    var last: Value = Value.unspecified;
+    while (true) {
+        if (body_node != .pair) return ElzError.InvalidArgument;
+        const bpair = body_node.pair;
+        var expr = bpair.car;
+        last = try eval(interp, &expr, new_env, fuel);
+        if (bpair.cdr == .nil) break;
+        body_node = bpair.cdr;
     }
     return last;
 }
@@ -133,7 +124,7 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
         const env = current_env;
 
         switch (ast.*) {
-            .number, .boolean, .character, .nil, .closure, .procedure, .foreign_procedure, .opaque_pointer, .cell, .unspecified => return ast.*,
+            .number, .boolean, .character, .nil, .closure, .procedure, .foreign_procedure, .opaque_pointer, .cell, .module, .unspecified => return ast.*,
             .string => |s| return Value{ .string = try env.allocator.dupe(u8, s) },
             .symbol => |sym| return env.get(sym, interp),
             .pair => |p| {
@@ -147,6 +138,37 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
                     };
                     if (p_arg.cdr != .nil) return ElzError.QuoteInvalidArguments;
                     return try p_arg.car.deep_clone(env.allocator);
+                }
+
+                if (first.is_symbol("import")) {
+                    if (rest == .nil or rest.pair.cdr != .nil) return ElzError.InvalidArgument;
+                    const path_val = try eval(interp, &rest.pair.car, env, fuel);
+                    if (path_val != .string) return ElzError.InvalidArgument;
+                    const path = path_val.string;
+
+                    if (interp.module_cache.get(path)) |module| {
+                        return Value{ .module = module };
+                    }
+
+                    const source = std.fs.cwd().readFileAlloc(interp.allocator, path, 1 * 1024 * 1024) catch |e| {
+                        interp.last_error_message = @errorName(e);
+                        return ElzError.ForeignFunctionError;
+                    };
+                    defer interp.allocator.free(source);
+
+                    var module_interp = try interpreter.Interpreter.init(.{});
+                    _ = try module_interp.evalString(source, fuel);
+
+                    const module = try interp.allocator.create(core.Module);
+                    module.* = .{ .exports = std.StringHashMap(Value).init(interp.allocator) };
+
+                    var it = module_interp.root_env.bindings.iterator();
+                    while (it.next()) |entry| {
+                        try module.exports.put(entry.key_ptr.*, entry.value_ptr.*);
+                    }
+
+                    try interp.module_cache.put(try interp.allocator.dupe(u8, path), module);
+                    return Value{ .module = module };
                 }
 
                 if (first.is_symbol("if")) {

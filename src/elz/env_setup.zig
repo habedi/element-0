@@ -6,6 +6,7 @@ const predicates = @import("./primitives/predicates.zig");
 const strings = @import("./primitives/strings.zig");
 const control = @import("./primitives/control.zig");
 const io = @import("./primitives/io.zig");
+const modules = @import("./primitives/modules.zig");
 const interpreter = @import("interpreter.zig");
 
 pub fn populate_math(interp: *interpreter.Interpreter) !void {
@@ -69,6 +70,10 @@ pub fn populate_io(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "load", core.Value{ .procedure = io.load });
 }
 
+pub fn populate_modules(interp: *interpreter.Interpreter) !void {
+    try interp.root_env.set(interp, "module-ref", core.Value{ .procedure = modules.module_ref });
+}
+
 pub fn populate_globals(interp: *interpreter.Interpreter) !void {
     try populate_math(interp);
     try populate_lists(interp);
@@ -76,6 +81,7 @@ pub fn populate_globals(interp: *interpreter.Interpreter) !void {
     try populate_strings(interp);
     try populate_control(interp);
     try populate_io(interp);
+    try populate_modules(interp);
 }
 
 pub fn define_foreign_func(env: *core.Environment, name: []const u8, comptime func: anytype) !void {

@@ -19,29 +19,10 @@ pub const Interpreter = struct {
     allocator: std.mem.Allocator,
     root_env: *core.Environment,
     last_error_message: ?[]const u8 = null,
-
-    fn verifyPrimitives(self: *Interpreter, flags: SandboxFlags) !void {
-        if (flags.enable_io) {
-            const must = [_][]const u8{ "display", "newline" };
-            inline for (must) |name| {
-                if (!self.root_env.contains(name)) return error.MissingPrimitive;
-            }
-        }
-        if (flags.enable_lists) {
-            const must = [_][]const u8{ "cons", "car", "cdr" };
-            inline for (must) |name| {
-                if (!self.root_env.contains(name)) return error.MissingPrimitive;
-            }
-        }
-        if (flags.enable_math) {
-            const must = [_][]const u8{ "+", "-", "*", "/", "=" };
-            inline for (must) |name| {
-                if (!self.root_env.contains(name)) return error.MissingPrimitive;
-            }
-        }
-    }
+    module_cache: std.StringHashMap(*core.Module),
 
     pub fn init(flags: SandboxFlags) !Interpreter {
+        _ = flags;
         const allocator = gc.allocator;
         if (!gc_initialized) {
             gc.init();
@@ -52,6 +33,7 @@ pub const Interpreter = struct {
             .allocator = allocator,
             .root_env = undefined,
             .last_error_message = null,
+            .module_cache = std.StringHashMap(*core.Module).init(allocator),
         };
 
         const root_env_ptr = gc.allocUncollectable(@sizeOf(core.Environment)) orelse return error.OutOfMemory;
@@ -67,24 +49,7 @@ pub const Interpreter = struct {
 
         try root_env.set(&self, "nil", core.Value.nil);
 
-        if (flags.enable_math) {
-            try env_setup.populate_math(&self);
-        }
-        if (flags.enable_lists) {
-            try env_setup.populate_lists(&self);
-        }
-        if (flags.enable_predicates) {
-            try env_setup.populate_predicates(&self);
-        }
-        if (flags.enable_strings) {
-            try env_setup.populate_strings(&self);
-        }
-        if (flags.enable_io) {
-            try env_setup.populate_io(&self);
-        }
-        try env_setup.populate_control(&self);
-
-        try self.verifyPrimitives(flags);
+        try env_setup.populate_globals(&self);
 
         const std_lib_source = @embedFile("../stdlib/std.elz");
         const std_lib_forms = try parser.readAll(std_lib_source, allocator);
