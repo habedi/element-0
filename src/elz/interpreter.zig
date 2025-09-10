@@ -20,34 +20,49 @@ pub const Interpreter = struct {
     root_env: *core.Environment,
     last_error_message: ?[]const u8 = null,
 
-    fn verifyPrimitives(self: *Interpreter) !void {
-        const must = [_][]const u8{
-            "display",
-            "newline",
-            "cons",
-            "car",
-            "cdr",
-        };
-        inline for (must) |name| {
-            if (!self.root_env.contains(name)) {
-                return error.MissingPrimitive;
+    fn verifyPrimitives(self: *Interpreter, flags: SandboxFlags) !void {
+        if (flags.enable_io) {
+            const must = [_][]const u8{ "display", "newline" };
+            inline for (must) |name| {
+                if (!self.root_env.contains(name)) return error.MissingPrimitive;
+            }
+        }
+        if (flags.enable_lists) {
+            const must = [_][]const u8{ "cons", "car", "cdr" };
+            inline for (must) |name| {
+                if (!self.root_env.contains(name)) return error.MissingPrimitive;
+            }
+        }
+        if (flags.enable_math) {
+            const must = [_][]const u8{ "+", "-", "*", "/", "=" };
+            inline for (must) |name| {
+                if (!self.root_env.contains(name)) return error.MissingPrimitive;
             }
         }
     }
 
     pub fn init(flags: SandboxFlags) !Interpreter {
+        const allocator = gc.allocator;
         if (!gc_initialized) {
             gc.init();
             gc_initialized = true;
         }
-        const allocator = gc.allocator;
 
         var self: Interpreter = .{
             .allocator = allocator,
             .root_env = undefined,
             .last_error_message = null,
         };
-        const root_env = try core.Environment.init(allocator, null);
+
+        const root_env_ptr = gc.allocUncollectable(@sizeOf(core.Environment)) orelse return error.OutOfMemory;
+        const root_env: *core.Environment = @ptrCast(@alignCast(root_env_ptr));
+        root_env.* = .{
+            .bindings = std.StringHashMap(core.Value).init(allocator),
+            .outer = null,
+            .allocator = allocator,
+        };
+        try root_env.bindings.ensureTotalCapacity(8);
+        gc.add_roots(@intFromPtr(root_env), @intFromPtr(root_env) + @sizeOf(core.Environment));
         self.root_env = root_env;
 
         try root_env.set(&self, "nil", core.Value.nil);
@@ -69,9 +84,7 @@ pub const Interpreter = struct {
         }
         try env_setup.populate_control(&self);
 
-        if (flags.enable_io and flags.enable_lists) {
-            try self.verifyPrimitives();
-        }
+        try self.verifyPrimitives(flags);
 
         const std_lib_source = @embedFile("../stdlib/std.elz");
         const std_lib_forms = try parser.readAll(std_lib_source, allocator);

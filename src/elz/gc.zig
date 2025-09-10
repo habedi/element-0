@@ -1,16 +1,10 @@
-//! This module provides an interface to the Boehm-Demers-Weiser garbage collector.
-//! It defines a custom allocator that uses the GC and a `GcArrayList` that
-//! uses this allocator.
-
 const std = @import("std");
 const mem = std.mem;
 
-/// Imports the C interface for the garbage collector.
 pub const c = @cImport({
     @cInclude("gc.h");
 });
 
-/// Allocates memory using the garbage collector.
 fn gcAlloc(ctx: *anyopaque, len: usize, alignment: mem.Alignment, ret_addr: usize) ?[*]u8 {
     _ = ret_addr;
     _ = ctx;
@@ -19,8 +13,6 @@ fn gcAlloc(ctx: *anyopaque, len: usize, alignment: mem.Alignment, ret_addr: usiz
     return @ptrCast(res);
 }
 
-/// Resize function for the garbage collector allocator.
-/// This function is a no-op because the GC handles resizing.
 fn gcResize(ctx: *anyopaque, buf: []u8, buf_align: mem.Alignment, new_len: usize, ret_addr: usize) bool {
     _ = ctx;
     _ = buf;
@@ -30,7 +22,6 @@ fn gcResize(ctx: *anyopaque, buf: []u8, buf_align: mem.Alignment, new_len: usize
     return false;
 }
 
-/// Remaps a memory buffer using the garbage collector.
 fn gcRemap(ctx: *anyopaque, buf: []u8, buf_align: mem.Alignment, new_len: usize, ret_addr: usize) ?[*]u8 {
     _ = ctx;
     _ = buf_align;
@@ -40,8 +31,6 @@ fn gcRemap(ctx: *anyopaque, buf: []u8, buf_align: mem.Alignment, new_len: usize,
     return @ptrCast(new_ptr);
 }
 
-/// Frees memory using the garbage collector.
-/// This function is a no-op because the GC handles freeing memory.
 fn gcFree(ctx: *anyopaque, buf: []u8, buf_align: mem.Alignment, ret_addr: usize) void {
     _ = ctx;
     _ = buf;
@@ -49,7 +38,10 @@ fn gcFree(ctx: *anyopaque, buf: []u8, buf_align: mem.Alignment, ret_addr: usize)
     _ = ret_addr;
 }
 
-/// A custom allocator that uses the Boehm-Demers-Weiser garbage collector.
+pub fn allocUncollectable(len: usize) ?*anyopaque {
+    return c.GC_malloc_uncollectable(len);
+}
+
 const GcAllocator = struct {
     vtable: mem.Allocator.VTable = .{
         .alloc = gcAlloc,
@@ -61,20 +53,19 @@ const GcAllocator = struct {
 
 var gc_allocator_instance = GcAllocator{};
 
-/// The global instance of the garbage collector allocator.
 pub const allocator: mem.Allocator = .{
     .ptr = &gc_allocator_instance,
     .vtable = &gc_allocator_instance.vtable,
 };
 
-/// Initializes the garbage collector.
 pub fn init() void {
     c.GC_init();
 }
 
-/// A generic ArrayList that uses the garbage collector for memory management.
-///
-/// - `T`: The type of the elements in the list.
+pub fn add_roots(start: usize, end: usize) void {
+    c.GC_add_roots(@ptrFromInt(start), @ptrFromInt(end));
+}
+
 pub fn GcArrayList(comptime T: type) type {
     return struct {
         items: []T,
@@ -82,11 +73,6 @@ pub fn GcArrayList(comptime T: type) type {
 
         const Self = @This();
 
-        /// Initializes a new `GcArrayList`.
-        ///
-        /// - `allocator`: The allocator to use. This is ignored because the
-        ///                `GcArrayList` always uses the garbage collector.
-        /// - `return`: A new `GcArrayList`.
         pub fn init(_: mem.Allocator) Self {
             return .{
                 .items = &[_]T{},
@@ -94,10 +80,6 @@ pub fn GcArrayList(comptime T: type) type {
             };
         }
 
-        /// Appends an item to the list.
-        ///
-        /// - `self`: A pointer to the list.
-        /// - `item`: The item to append.
         pub fn append(self: *Self, item: T) !void {
             if (self.items.len == self.capacity) {
                 const new_capacity = if (self.capacity == 0) 4 else self.capacity * 2;
@@ -120,20 +102,10 @@ pub fn GcArrayList(comptime T: type) type {
             self.items.len += 1;
         }
 
-        /// Gets the item at the specified index.
-        ///
-        /// - `self`: The list.
-        /// - `index`: The index of the item to get.
-        /// - `return`: The item at the specified index.
         pub fn get(self: Self, index: usize) T {
             return self.items[index];
         }
 
-        /// Sets the item at the specified index.
-        ///
-        /// - `self`: The list.
-        /// - `index`: The index of the item to set.
-        /// - `value`: The new value.
         pub fn set(self: Self, index: usize, value: T) void {
             self.items[index] = value;
         }
