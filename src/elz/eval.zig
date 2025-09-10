@@ -116,6 +116,8 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
     var current_env = env_start;
 
     while (true) {
+        std.mem.doNotOptimizeAway(&current_env);
+
         interp.last_error_message = null;
         if (fuel.* == 0) return ElzError.ExecutionBudgetExceeded;
         fuel.* -= 1;
@@ -156,13 +158,14 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
                     };
                     defer interp.allocator.free(source);
 
-                    const module_env = try core.Environment.init(interp.allocator, null);
                     var module_interp_stub: interpreter.Interpreter = .{
                         .allocator = interp.allocator,
-                        .root_env = module_env,
+                        .root_env = undefined,
                         .last_error_message = null,
                         .module_cache = undefined,
                     };
+                    const module_env = try core.Environment.init(interp.allocator, null);
+                    module_interp_stub.root_env = module_env;
                     try env_setup.populate_globals(&module_interp_stub);
 
                     const forms = try parser.readAll(source, interp.allocator);
