@@ -91,59 +91,79 @@ fn evalQuote(rest: Value, env: *Environment) !Value {
     return try p_arg.car.deep_clone(env.allocator);
 }
 
-fn evalImport(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64) !Value {
-    if (rest == .nil or rest.pair.cdr != .nil) return ElzError.InvalidArgument;
-    const path_val = try eval(interp, &rest.pair.car, env, fuel);
-    if (path_val != .string) return ElzError.InvalidArgument;
-    const path = path_val.string;
+fn evalImport(
+    interp: *interpreter.Interpreter,
+    rest: core.Value,
+    env: *core.Environment,
+    fuel: *u64,
+) ElzError!core.Value {
+    _ = env;
+    _ = fuel;
 
-    if (interp.module_cache.get(path)) |module| {
-        return core.Value{ .module = module };
-    }
-
-    const source = std.fs.cwd().readFileAlloc(interp.allocator, path, 1 * 1024 * 1024) catch |e| {
-        interp.last_error_message = @errorName(e);
-        return ElzError.ForeignFunctionError;
+    const arg_list = rest;
+    if (arg_list == .nil) return ElzError.WrongArgumentCount;
+    const first_pair = switch (arg_list) {
+        .pair => |p| p,
+        else => return ElzError.InvalidArgument,
     };
-    defer interp.allocator.free(source);
+    const path_val = first_pair.car;
+    const remaining = first_pair.cdr;
+    if (remaining != .nil) return ElzError.WrongArgumentCount;
 
-    var module_interp = interp.*;
-    const module_env = try core.Environment.init(interp.allocator, null);
-    module_interp.root_env = module_env;
-    module_interp.last_error_message = null;
+    const path_str = switch (path_val) {
+        .string => |s| s,
+        else => return ElzError.InvalidArgument,
+    };
 
-    try module_env.set(&module_interp, "nil", core.Value.nil);
-    try env_setup.populate_math(&module_interp);
-    try env_setup.populate_lists(&module_interp);
-    try env_setup.populate_predicates(&module_interp);
-    try env_setup.populate_strings(&module_interp);
-    try env_setup.populate_io(&module_interp);
-    try env_setup.populate_control(&module_interp);
-    try env_setup.populate_modules(&module_interp);
-    try env_setup.populate_process(&module_interp);
-
-    const std_lib_source = @embedFile("../stdlib/std.elz");
-    const std_lib_forms = try parser.readAll(std_lib_source, interp.allocator);
-    var std_fuel: u64 = 1_000_000;
-    for (std_lib_forms.items) |form| {
-        _ = try eval(&module_interp, &form, module_env, &std_fuel);
+    if (interp.module_cache.get(path_str)) |cached_mod_ptr| {
+        return core.Value{ .module = cached_mod_ptr };
     }
 
-    const forms = try parser.readAll(source, interp.allocator);
-    for (forms.items) |form| {
-        _ = try eval(&module_interp, &form, module_env, fuel);
+    const source_bytes = std.fs.cwd().readFileAlloc(interp.allocator, path_str, 1024 * 1024) catch {
+        interp.last_error_message = "Failed to read module file.";
+        return ElzError.InvalidArgument;
+    };
+    defer interp.allocator.free(source_bytes);
+
+    const forms = parser.readAll(source_bytes, interp.allocator) catch {
+        interp.last_error_message = "Failed to parse module file.";
+        return ElzError.InvalidArgument;
+    };
+
+    const module_env = try core.Environment.init(interp.allocator, interp.root_env);
+
+    const form_it = forms.items;
+    for (form_it) |form_node| {
+        var local_fuel: u64 = 1_000_000;
+        _ = try eval(interp, &form_node, module_env, &local_fuel);
     }
 
-    const module = try interp.allocator.create(core.Module);
-    module.* = .{ .exports = std.StringHashMap(core.Value).init(interp.allocator) };
+    const mod_ptr = try interp.allocator.create(core.Module);
+    mod_ptr.* = .{
+        .exports = std.StringHashMap(core.Value).init(interp.allocator),
+    };
 
-    var it = module_env.bindings.iterator();
-    while (it.next()) |entry| {
-        try module.exports.put(entry.key_ptr.*, entry.value_ptr.*);
+    var temp = std.ArrayList(struct { k: []const u8, v: core.Value }).init(interp.allocator);
+    defer temp.deinit();
+
+    {
+        var it = module_env.bindings.iterator();
+        while (it.next()) |entry| {
+            if (entry.key_ptr.*.len > 0 and entry.key_ptr.*[0] == '_') continue;
+            try temp.append(.{ .k = entry.key_ptr.*, .v = entry.value_ptr.* });
+        }
     }
 
-    try interp.module_cache.put(try interp.allocator.dupe(u8, path), module);
-    return core.Value{ .module = module };
+    try mod_ptr.exports.ensureTotalCapacity(@intCast(temp.items.len));
+
+    for (temp.items) |kv| {
+        try mod_ptr.exports.put(kv.k, kv.v);
+    }
+
+    const cached_name = try interp.allocator.dupe(u8, path_str);
+    try interp.module_cache.put(cached_name, mod_ptr);
+
+    return core.Value{ .module = mod_ptr };
 }
 
 fn evalIf(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value) !Value {

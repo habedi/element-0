@@ -29,12 +29,10 @@ it can easily be extended using Zig code using foreign function interface (FFI) 
 
 ### Why Element 0?
 
-Having an embeddable scripting language like Element 0 can be very useful in a Zig project.
-For example, you can write the core parts of your application in Zig.
-Then you write features like plugins or configuration files in Element 0,
-which let you change parts of your application without the need to recompile the entire project.
-Additionally, you can access Zig functions and data structures from Element 0 code.
-That allows you to extend your application with both Element 0 scripts and Zig code in a single project.
+Having an embeddable scripting language is useful in a Zig project.
+For example, you can write the core parts of your application in Zig for performance.
+Then you can write features like plugins or configuration files in Element 0.
+This lets you change parts of your application without the need to recompile the entire project.
 
 ### Features
 
@@ -73,11 +71,11 @@ Element 0 is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
     ./zig-out/bin/elz-repl --file examples/elz/e13-hello-world.elz
     ```
 
-#### Embedding Elz in your Zig project
+#### Embedding Elz in Zig Projects
 
 You can add Elz to your project as a dependency and use it as a scripting engine.
 
-#### Installation
+##### Installation
 
 Run the following command in the root directory of your project to add Elz as a dependency.
 
@@ -88,7 +86,7 @@ zig fetch --save=elz "https://github.com/habedi/element-0/archive/main.tar.gz"
 This command downloads the latest development version of Elz.
 It adds it to Zig's global cache and updates your project's `build.zig.zon` file.
 
-#### Adding to Your Build Script
+##### Adding to Your Build Script
 
 Next, modify your `build.zig` file. This will make the Elz library available to your application as a module.
 
@@ -122,7 +120,7 @@ pub fn build(b: *std.Build) void {
 }
 ```
 
-#### Using Elz in Your Application
+##### Using Elz in Zig Applications
 
 Finally, you can `@import("elz")` and use the interpreter in your Zig application.
 
