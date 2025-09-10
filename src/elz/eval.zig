@@ -77,6 +77,8 @@ fn evalLetRec(interp: *interpreter.Interpreter, ast: Value, env: *Environment, f
         if (bpair.cdr == .nil) break;
         body_node = bpair.cdr;
     }
+
+    std.mem.doNotOptimizeAway(&new_env);
     return last;
 }
 
@@ -105,21 +107,16 @@ fn evalImport(interp: *interpreter.Interpreter, rest: Value, env: *Environment, 
     };
     defer interp.allocator.free(source);
 
-    var module_interp_stub: interpreter.Interpreter = .{
-        .allocator = interp.allocator,
-        .root_env = undefined,
-        .last_error_message = null,
-        .module_cache = undefined,
-    };
+    var module_interp_stub = interp.*;
     const module_env = try core.Environment.init(interp.allocator, null);
     module_interp_stub.root_env = module_env;
+    module_interp_stub.last_error_message = null;
+
     try env_setup.populate_globals(&module_interp_stub);
 
-    // --- Load standard library for the module ---
     const std_lib_source = @embedFile("../stdlib/std.elz");
     const std_lib_forms = try parser.readAll(std_lib_source, interp.allocator);
     for (std_lib_forms.items) |form| {
-        // Use a large, fixed fuel amount for stdlib initialization.
         var std_fuel: u64 = 1_000_000;
         _ = try eval(&module_interp_stub, &form, module_env, &std_fuel);
     }
@@ -449,6 +446,7 @@ fn evalTry(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fue
             handler_result = try eval(interp, &handler_p.car, new_env, fuel);
             current_handler_node = handler_p.cdr;
         }
+        std.mem.doNotOptimizeAway(&new_env);
         return handler_result;
     } else {
         return last_result;
@@ -513,6 +511,7 @@ pub fn eval_proc(interp: *interpreter.Interpreter, proc: Value, args: core.Value
                 result = try eval(interp, &p.car, new_env, fuel);
                 current_node = p.cdr;
             }
+            std.mem.doNotOptimizeAway(&new_env);
             return result;
         },
         .procedure => |p| return p(interp, env, args, fuel),
@@ -553,11 +552,9 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
 
                 if (result == .unspecified) {
                     if (current_ast != original_ast_ptr) {
-                        // This was a TCO signal; the ast pointer was updated to continue the loop.
                         continue;
                     }
                 }
-                // This was a normal return, not a TCO. Return the result, even if it is .unspecified.
                 return result;
             },
         }

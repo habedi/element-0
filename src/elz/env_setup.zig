@@ -58,6 +58,7 @@ pub fn populate_strings(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "symbol->string", core.Value{ .procedure = strings.symbol_to_string });
     try interp.root_env.set(interp, "string->symbol", core.Value{ .procedure = strings.string_to_symbol });
     try interp.root_env.set(interp, "string-length", core.Value{ .procedure = strings.string_length });
+    try interp.root_env.set(interp, "string-append", core.Value{ .procedure = strings.string_append });
     try interp.root_env.set(interp, "char=?", core.Value{ .procedure = strings.char_eq });
 }
 

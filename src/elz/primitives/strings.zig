@@ -28,6 +28,20 @@ pub fn string_length(_: *interpreter.Interpreter, _: *core.Environment, args: co
     return Value{ .number = @floatFromInt(len) };
 }
 
+pub fn string_append(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    var buffer = std.ArrayList(u8).init(env.allocator);
+    defer buffer.deinit();
+
+    for (args.items) |arg| {
+        switch (arg) {
+            .string => |s| try buffer.appendSlice(s),
+            else => return ElzError.InvalidArgument,
+        }
+    }
+
+    return Value{ .string = try buffer.toOwnedSlice() };
+}
+
 pub fn char_eq(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const a = args.items[0];
