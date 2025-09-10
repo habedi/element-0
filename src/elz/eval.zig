@@ -20,6 +20,75 @@ fn eval_expr_list(interp: *interpreter.Interpreter, list: Value, env: *Environme
     return results;
 }
 
+fn evalLetRec(interp: *interpreter.Interpreter, form_list: Value, env: *core.Environment, fuel: *u64) ElzError!core.Value {
+    if (fuel.* == 0) return ElzError.ExecutionBudgetExceeded;
+    fuel.* -= 1;
+
+    if (form_list != .pair) return ElzError.InvalidArgument;
+    const after_head = form_list.pair.cdr;
+
+    if (after_head == .nil or after_head != .pair) return ElzError.InvalidArgument;
+
+    const bindings_node = after_head.pair.car;
+    const body_nodes = after_head.pair.cdr;
+
+    var new_env = try core.Environment.init(env.allocator, env);
+
+    const max_bindings = 128;
+    var cells: [max_bindings]*core.Cell = undefined;
+    var rhs_exprs: [max_bindings]core.Value = undefined;
+    var names: [max_bindings][]const u8 = undefined;
+    var count: usize = 0;
+
+    var b_iter = bindings_node;
+    while (b_iter != .nil) {
+        if (b_iter != .pair) return ElzError.InvalidArgument;
+        const binding_form = b_iter.pair.car;
+        if (binding_form != .pair) return ElzError.InvalidArgument;
+
+        const name_val = binding_form.pair.car;
+        const rest1 = binding_form.pair.cdr;
+        if (name_val != .symbol) return ElzError.InvalidArgument;
+        if (rest1 == .nil or rest1 != .pair) return ElzError.InvalidArgument;
+
+        const expr_val = rest1.pair.car;
+        const rest2 = rest1.pair.cdr;
+        if (rest2 != .nil) return ElzError.InvalidArgument;
+
+        if (count >= max_bindings) return ElzError.InvalidArgument;
+
+        const cell_ptr = try new_env.allocator.create(core.Cell);
+        cell_ptr.* = .{ .content = core.Value.unspecified };
+        cells[count] = cell_ptr;
+        rhs_exprs[count] = expr_val;
+        names[count] = name_val.symbol;
+
+        try new_env.set(interp, name_val.symbol, core.Value{ .cell = cell_ptr });
+
+        count += 1;
+        b_iter = b_iter.pair.cdr;
+    }
+
+    var i: usize = 0;
+    while (i < count) : (i += 1) {
+        var rhs_form = rhs_exprs[i];
+        const evaluated = try eval(interp, &rhs_form, new_env, fuel);
+        cells[i].content = try evaluated.deep_clone(new_env.allocator);
+    }
+
+    if (body_nodes == .nil) return core.Value.unspecified;
+
+    var last: core.Value = .unspecified;
+    var body_iter = body_nodes;
+    while (body_iter != .nil) {
+        if (body_iter != .pair) return ElzError.InvalidArgument;
+        var body_form = body_iter.pair.car;
+        last = try eval(interp, &body_form, new_env, fuel);
+        body_iter = body_iter.pair.cdr;
+    }
+    return last;
+}
+
 pub fn eval_proc(interp: *interpreter.Interpreter, proc: Value, args: core.ValueList, env: *Environment, fuel: *u64) ElzError!Value {
     switch (proc) {
         .closure => |c| {
@@ -330,50 +399,7 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
                 }
 
                 if (first.is_symbol("letrec")) {
-                    const p_bindings = switch (rest) {
-                        .pair => |p_rest| p_rest,
-                        else => return ElzError.InvalidArgument,
-                    };
-                    const bindings_list = p_bindings.car;
-                    const body = p_bindings.cdr;
-                    const new_env = try Environment.init(env.allocator, env);
-
-                    var current_binding = bindings_list;
-                    while (current_binding != .nil) {
-                        const binding_p = current_binding.pair;
-                        const binding = binding_p.car;
-                        const var_p = binding.pair;
-                        const var_sym = var_p.car;
-                        const cell = try env.allocator.create(core.Cell);
-                        cell.* = .{ .content = .unspecified };
-                        try new_env.set(interp, var_sym.symbol, Value{ .cell = cell });
-                        current_binding = binding_p.cdr;
-                    }
-
-                    current_binding = bindings_list;
-                    while (current_binding != .nil) {
-                        const binding_p = current_binding.pair;
-                        const binding = binding_p.car;
-                        const var_p = binding.pair;
-                        const var_sym = var_p.car;
-                        const init_p = var_p.cdr.pair;
-                        const init_expr = init_p.car;
-                        const cell_val = new_env.bindings.get(var_sym.symbol).?;
-                        const cell = cell_val.cell;
-                        const value = try eval(interp, &init_expr, new_env, fuel);
-                        cell.content = value;
-                        current_binding = binding_p.cdr;
-                    }
-
-                    var current_body_node = body;
-                    if (current_body_node == .nil) return .nil;
-                    while (current_body_node.pair.cdr != .nil) {
-                        _ = try eval(interp, &current_body_node.pair.car, new_env, fuel);
-                        current_body_node = current_body_node.pair.cdr;
-                    }
-                    current_ast = &current_body_node.pair.car;
-                    current_env = new_env;
-                    continue;
+                    return evalLetRec(interp, ast.*, env, fuel);
                 }
 
                 if (first.is_symbol("try")) {
