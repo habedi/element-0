@@ -28,9 +28,14 @@
   (display "Failed: ") (display *tests-failed*) (newline)
   (newline)
   (if (> *tests-failed* 0)
-      (display "RESULT: FAILED")
-      (display "RESULT: PASSED"))
-  (newline))
+      (begin
+        (display "RESULT: FAILED")
+        (newline)
+        (exit 1))
+      (begin
+        (display "RESULT: PASSED")
+        (newline)
+        (exit 0))))
 
 ;; --- Test Cases ---
 

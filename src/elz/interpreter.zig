@@ -22,7 +22,6 @@ pub const Interpreter = struct {
     module_cache: std.StringHashMap(*core.Module),
 
     pub fn init(flags: SandboxFlags) !Interpreter {
-        _ = flags;
         const allocator = gc.allocator;
         if (!gc_initialized) {
             gc.init();
@@ -49,7 +48,24 @@ pub const Interpreter = struct {
 
         try root_env.set(&self, "nil", core.Value.nil);
 
-        try env_setup.populate_globals(&self);
+        if (flags.enable_math) {
+            try env_setup.populate_math(&self);
+        }
+        if (flags.enable_lists) {
+            try env_setup.populate_lists(&self);
+        }
+        if (flags.enable_predicates) {
+            try env_setup.populate_predicates(&self);
+        }
+        if (flags.enable_strings) {
+            try env_setup.populate_strings(&self);
+        }
+        if (flags.enable_io) {
+            try env_setup.populate_io(&self);
+        }
+        try env_setup.populate_control(&self);
+        try env_setup.populate_modules(&self);
+        try env_setup.populate_process(&self);
 
         const std_lib_source = @embedFile("../stdlib/std.elz");
         const std_lib_forms = try parser.readAll(std_lib_source, allocator);
