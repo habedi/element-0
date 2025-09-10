@@ -1,18 +1,18 @@
-//! This module implements primitive procedures for list manipulation.
-
 const std = @import("std");
 const core = @import("../core.zig");
 const eval = @import("../eval.zig");
 const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
+const interpreter = @import("../interpreter.zig");
 
-/// The `cons` primitive procedure.
-/// Constructs a new pair.
+/// `cons` creates a new pair.
 ///
-/// - `env`: The environment.
-/// - `args`: A list containing two values, the `car` and the `cdr`.
-/// - `return`: A new pair.
-pub fn cons(env: *core.Environment, args: core.ValueList) !Value {
+/// Parameters:
+/// - `args`: A `ValueList` containing two elements, the `car` and the `cdr` of the new pair.
+///
+/// Returns:
+/// A new `Value.pair`.
+pub fn cons(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const p = try env.allocator.create(core.Pair);
     p.* = .{
@@ -22,39 +22,42 @@ pub fn cons(env: *core.Environment, args: core.ValueList) !Value {
     return Value{ .pair = p };
 }
 
-/// The `car` primitive procedure.
-/// Returns the first element of a pair.
+/// `car` returns the first element of a pair.
 ///
-/// - `env`: The environment.
-/// - `args`: A list containing a single pair.
-/// - `return`: The first element of the pair.
-pub fn car(env: *core.Environment, args: core.ValueList) !Value {
+/// Parameters:
+/// - `args`: A `ValueList` containing a single pair.
+///
+/// Returns:
+/// The `car` of the pair.
+pub fn car(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const p = args.items[0];
     if (p != .pair) return ElzError.InvalidArgument;
     return p.pair.car.deep_clone(env.allocator);
 }
 
-/// The `cdr` primitive procedure.
-/// Returns the second element of a pair.
+/// `cdr` returns the second element of a pair.
 ///
-/// - `env`: The environment.
-/// - `args`: A list containing a single pair.
-/// - `return`: The second element of the pair.
-pub fn cdr(env: *core.Environment, args: core.ValueList) !Value {
+/// Parameters:
+/// - `args`: A `ValueList` containing a single pair.
+///
+/// Returns:
+/// The `cdr` of the pair.
+pub fn cdr(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const p = args.items[0];
     if (p != .pair) return ElzError.InvalidArgument;
     return p.pair.cdr.deep_clone(env.allocator);
 }
 
-/// The `list` primitive procedure.
-/// Constructs a new list from its arguments.
+/// `list` creates a new list from its arguments.
 ///
-/// - `env`: The environment.
-/// - `args`: A list of values to be included in the new list.
-/// - `return`: A new list containing the arguments.
-pub fn list(env: *core.Environment, args: core.ValueList) !Value {
+/// Parameters:
+/// - `args`: A `ValueList` of elements to be included in the new list.
+///
+/// Returns:
+/// A new list.
+pub fn list(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     var head: core.Value = .nil;
     var i = args.items.len;
     while (i > 0) {
@@ -69,13 +72,14 @@ pub fn list(env: *core.Environment, args: core.ValueList) !Value {
     return head;
 }
 
-/// The `length` primitive procedure.
-/// Returns the length of a list.
+/// `list_length` returns the number of elements in a proper list.
 ///
-/// - `env`: The environment.
-/// - `args`: A list containing a single list.
-/// - `return`: The length of the list as a number.
-pub fn list_length(_: *core.Environment, args: core.ValueList) !Value {
+/// Parameters:
+/// - `args`: A `ValueList` containing a single list.
+///
+/// Returns:
+/// The length of the list as a `Value.number`.
+pub fn list_length(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     var count: f64 = 0;
     var current = args.items[0];
@@ -90,13 +94,14 @@ pub fn list_length(_: *core.Environment, args: core.ValueList) !Value {
     return Value{ .number = count };
 }
 
-/// The `append` primitive procedure.
-/// Appends multiple lists together.
+/// `append` concatenates multiple lists into a single list.
 ///
-/// - `env`: The environment.
-/// - `args`: A list of lists to append.
-/// - `return`: A new list containing the elements of all input lists.
-pub fn append(env: *core.Environment, args: core.ValueList) !Value {
+/// Parameters:
+/// - `args`: A `ValueList` of lists to be appended.
+///
+/// Returns:
+/// A new list containing the elements of all the input lists.
+pub fn append(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len == 0) return Value.nil;
     var result_head: core.Value = .nil;
     var result_tail: ?*core.Pair = null;
@@ -132,13 +137,14 @@ pub fn append(env: *core.Environment, args: core.ValueList) !Value {
     }
 }
 
-/// The `reverse` primitive procedure.
-/// Reverses a list.
+/// `reverse` reverses the order of elements in a proper list.
 ///
-/// - `env`: The environment.
-/// - `args`: A list containing a single list to reverse.
-/// - `return`: A new list with the elements in reverse order.
-pub fn reverse(env: *core.Environment, args: core.ValueList) !Value {
+/// Parameters:
+/// - `args`: A `ValueList` containing a single list to be reversed.
+///
+/// Returns:
+/// A new list with the elements in reverse order.
+pub fn reverse(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     var head: core.Value = .nil;
     var current = args.items[0];
@@ -155,13 +161,14 @@ pub fn reverse(env: *core.Environment, args: core.ValueList) !Value {
     return head;
 }
 
-/// The `map` primitive procedure.
-/// Applies a procedure to each element of a list.
+/// `map` applies a procedure to each element of a list and returns a new list with the results.
 ///
-/// - `env`: The environment.
-/// - `args`: A list containing a procedure and a list.
-/// - `return`: A new list with the results of applying the procedure.
-pub fn map(env: *core.Environment, args: core.ValueList) !Value {
+/// Parameters:
+/// - `args`: A `ValueList` containing two elements: the procedure to apply and the list to map over.
+///
+/// Returns:
+/// A new list containing the results of applying the procedure to each element of the input list.
+pub fn map(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
     const proc = args.items[0];
     const list_val = args.items[1];
@@ -169,7 +176,6 @@ pub fn map(env: *core.Environment, args: core.ValueList) !Value {
     var result_tail: ?*core.Pair = null;
     var arg_list = core.ValueList.init(env.allocator);
     try arg_list.append(.nil);
-    var fuel: u64 = 1_000_000;
     var current_node = list_val;
     while (current_node != .nil) {
         const p_node = switch (current_node) {
@@ -177,7 +183,7 @@ pub fn map(env: *core.Environment, args: core.ValueList) !Value {
             else => return ElzError.InvalidArgument,
         };
         arg_list.items[0] = p_node.car;
-        const mapped_val = try eval.eval_proc(proc, arg_list, env, &fuel);
+        const mapped_val = try eval.eval_proc(interp, proc, arg_list, env, fuel);
         const new_pair = try env.allocator.create(core.Pair);
         new_pair.* = .{ .car = mapped_val, .cdr = .nil };
         if (result_tail) |tail| {
@@ -190,4 +196,72 @@ pub fn map(env: *core.Environment, args: core.ValueList) !Value {
         current_node = p_node.cdr;
     }
     return result_head;
+}
+
+test "list primitives" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp = interpreter.Interpreter.init(allocator);
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    // Test list
+    var args = core.ValueList.init(allocator);
+    try args.append(Value{ .number = 1 });
+    try args.append(Value{ .number = 2 });
+    const list_val = try list(&interp, interp.root_env, args, &fuel);
+    try testing.expect(list_val.pair.car == Value{ .number = 1 });
+    try testing.expect(list_val.pair.cdr.pair.car == Value{ .number = 2 });
+
+    // Test cons
+    args.clearRetainingCapacity();
+    try args.append(Value{ .number = 0 });
+    try args.append(list_val);
+    const new_list = try cons(&interp, interp.root_env, args, &fuel);
+    try testing.expect(new_list.pair.car == Value{ .number = 0 });
+
+    // Test car
+    args.clearRetainingCapacity();
+    try args.append(new_list);
+    const car_val = try car(&interp, interp.root_env, args, &fuel);
+    try testing.expect(car_val == Value{ .number = 0 });
+
+    // Test cdr
+    args.clearRetainingCapacity();
+    try args.append(new_list);
+    const cdr_val = try cdr(&interp, interp.root_env, args, &fuel);
+    try testing.expect(cdr_val.pair.car == Value{ .number = 1 });
+
+    // Test list-length
+    args.clearRetainingCapacity();
+    try args.append(new_list);
+    const len_val = try list_length(&interp, interp.root_env, args, &fuel);
+    try testing.expect(len_val == Value{ .number = 3 });
+
+    // Test reverse
+    args.clearRetainingCapacity();
+    try args.append(list_val);
+    const reversed_list = try reverse(&interp, interp.root_env, args, &fuel);
+    try testing.expect(reversed_list.pair.car == Value{ .number = 2 });
+    try testing.expect(reversed_list.pair.cdr.pair.car == Value{ .number = 1 });
+
+    // Test append
+    args.clearRetainingCapacity();
+    try args.append(list_val);
+    try args.append(reversed_list);
+    const appended_list = try append(&interp, interp.root_env, args, &fuel);
+    try testing.expect(appended_list.pair.car == Value{ .number = 1 });
+    try testing.expect(appended_list.pair.cdr.pair.car == Value{ .number = 2 });
+    try testing.expect(appended_list.pair.cdr.pair.cdr.pair.car == Value{ .number = 2 });
+    try testing.expect(appended_list.pair.cdr.pair.cdr.pair.cdr.pair.car == Value{ .number = 1 });
+
+    // Test map
+    const source = "(lambda (x) (* x 2))";
+    const proc_val = try eval.eval(&interp, &try interp.read(source), interp.root_env, &fuel);
+    args.clearRetainingCapacity();
+    try args.append(proc_val);
+    try args.append(list_val);
+    const mapped_list = try map(&interp, interp.root_env, args, &fuel);
+    try testing.expect(mapped_list.pair.car == Value{ .number = 2 });
+    try testing.expect(mapped_list.pair.cdr.pair.car == Value{ .number = 4 });
 }

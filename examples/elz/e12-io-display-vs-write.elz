@@ -1,0 +1,24 @@
+;;; This example shows the difference between display and write.
+
+(display "--- Demonstrating display vs. write ---")
+(newline)
+(newline)
+
+(display "A string value:")
+(newline)
+(display "  - With display: ")
+(display "hello world")
+(newline)
+(display "  - With write:   ")
+(write "hello world")
+(newline)
+(newline)
+
+(display "A list value:")
+(newline)
+(display "  - With display: ")
+(display '(1 2 #t))
+(newline)
+(display "  - With write:   ")
+(write '(1 2 #t))
+(newline)

@@ -1,0 +1,10 @@
+;;; This is a simple "library" file.
+;;; It defines a variable and a function that will be used by another file.
+
+(define library-message "This message was defined in e14-greetings-lib.elz")
+
+(define (congratulate name)
+  (display "Congratulations, ")
+  (display name)
+  (display "!")
+  (newline))

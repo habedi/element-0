@@ -1,0 +1,8 @@
+(define list-extras (import "src/stdlib/list-extras.elz"))
+(define find (module-ref list-extras 'find))
+
+(define my-list '(1 2 3 4 5 6))
+(define is-even? (lambda (x) (= 0 (% x 2))))
+
+;; Now we can use the 'find' function
+(display (find is-even? my-list)) ;; Will display 2

@@ -1,0 +1,134 @@
+;;; ---------------------------------------
+;;; Element 0 Standard Library Test Suite
+;;; ---------------------------------------
+
+(display "Running Element 0 Standard Library tests...")
+(newline)
+
+;; --- Test Runner Framework ---
+
+(define *tests-run* 0)
+(define *tests-failed* 0)
+
+(define (test-case name test-expr)
+  (set! *tests-run* (+ *tests-run* 1))
+  (if (not (try test-expr (catch err #f)))
+      (begin
+        (set! *tests-failed* (+ *tests-failed* 1))
+        (display "[FAILED]: ") (display name) (newline))
+      (begin
+        (display "[PASSED]: ") (display name) (newline))))
+
+(define (report-summary)
+  (newline)
+  (display "--------------------") (newline)
+  (display "Tests Finished.") (newline)
+  (display "Total run: ") (display *tests-run*) (newline)
+  (display "Passed: ") (display (- *tests-run* *tests-failed*)) (newline)
+  (display "Failed: ") (display *tests-failed*) (newline)
+  (newline)
+  (if (> *tests-failed* 0)
+      (begin
+        (display "RESULT: FAILED")
+        (newline)
+        (exit 1))
+      (begin
+        (display "RESULT: PASSED")
+        (newline)
+        (exit 0))))
+
+;; --- Test Cases ---
+
+;; Logical and Boolean Functions
+(test-case "not false" (equal? (not #f) #t))
+(test-case "not true" (equal? (not #t) #f))
+(test-case "not list" (equal? (not '(1 2)) #f))
+(test-case "!= equal lists" (equal? (!= '(1 2) '(1 2)) #f))
+(test-case "!= different lists" (equal? (!= '(1 2) '(1 3)) #t))
+(test-case "!= different types" (equal? (!= 1 "1") #t))
+
+;; Type Predicates
+(test-case "atom? symbol" (equal? (atom? 'a) #t))
+(test-case "atom? number" (equal? (atom? 123) #t))
+(test-case "atom? list" (equal? (atom? '(1 2)) #f))
+(test-case "atom? empty-list" (equal? (atom? '()) #t))
+(test-case "string? predicate" (string? "hello"))
+(test-case "procedure? predicate" (procedure? +))
+(test-case "procedure? for lambda" (procedure? (lambda () 1)))
+(test-case "typename string" (equal? (typename "a") "string"))
+(test-case "typename number" (equal? (typename 123) "number"))
+(test-case "typename procedure" (equal? (typename car) "procedure"))
+(test-case "typename nil" (equal? (typename '()) "nil"))
+
+;; Numeric Functions
+(test-case "abs positive" (equal? (abs 10) 10))
+(test-case "abs negative" (equal? (abs -10) 10))
+(test-case "max" (equal? (max 10 20 5) 20))
+(test-case "min" (equal? (min 10 20 5) 5))
+(test-case "square" (equal? (square 5) 25))
+(test-case "avg" (equal? (avg '(10 20 30)) 20))
+(test-case "fibonacci" (equal? (fib 10) 55))
+(test-case "fibonacci zero" (equal? (fib 0) 0))
+
+;; List Utilities
+(test-case "caar" (equal? (caar '((a b) c)) 'a))
+(test-case "cadr" (equal? (cadr '(a b c)) 'b))
+(test-case "first" (equal? (first '(a b c)) 'a))
+(test-case "rest" (equal? (rest '(a b c)) '(b c)))
+(test-case "nth" (equal? (nth 2 '(a b c d)) 'c))
+(test-case "last-element" (equal? (last-element '(a b c)) 'c))
+(test-case "copy-list equality" (equal? (copy-list '(1 2)) '(1 2)))
+(test-case "copy-list identity" (let ((a '(1 2))) (not (eq? a (copy-list a)))))
+(test-case "indexof found" (equal? (indexof 'b '(a b c)) 1))
+(test-case "indexof not found" (equal? (indexof 'z '(a b c)) #f))
+(test-case "reverse" (equal? (reverse '(1 2 3)) '(3 2 1)))
+(test-case "member found" (equal? (member 2 '(1 2 3)) '(2 3)))
+(test-case "member not found" (equal? (member 4 '(1 2 3)) #f))
+(test-case "assoc found" (equal? (assoc 'b '((a 1) (b 2))) '(b 2)))
+
+;; Higher-Order Functions
+(test-case "any? true" (any? (lambda (x) (> x 3)) '(1 2 3 4 5)))
+(test-case "any? false" (not (any? (lambda (x) (> x 5)) '(1 2 3 4 5))))
+(test-case "every? true" (every? (lambda (x) (< x 6)) '(1 2 3 4 5)))
+(test-case "every? false" (not (every? (lambda (x) (< x 5)) '(1 2 3 4 5))))
+(test-case "fold-left" (equal? (fold-left + 0 '(1 2 3 4)) 10))
+(test-case "fold-right" (equal? (fold-right cons '() '(1 2 3)) '(1 2 3)))
+(test-case "quicksort ascending" (equal? (quicksort '(5 2 8 1 9) <) '(1 2 5 8 9)))
+(test-case "quicksort descending" (equal? (quicksort '(5 2 8 1 9) >) '(9 8 5 2 1)))
+
+;; Advanced & Demonstrative
+(test-case "Y Combinator factorial" (equal? ((Y (lambda (r) (lambda (x) (if (< x 2) 1 (* x (r (- x 1))))))) 5) 120))
+
+;; try/catch Tests
+(test-case "try/catch success" (equal? (try 10 (catch err #f)) 10))
+(test-case "try/catch failure" (equal? (try (/ 1 0) (catch err 'caught-it)) 'caught-it))
+
+(test-case "letrec mutual recursion"
+  (equal? (letrec ((even? (lambda (n) (if (= n 0) #t (odd? (- n 1)))))
+                   (odd?  (lambda (n) (if (= n 0) #f (even? (- n 1))))))
+            (and (even? 10) (odd? 9)))
+          #t))
+
+(test-case "closure grandparent capture"
+  (equal? ((lambda (a)
+             (let ((make (lambda ()
+                           (lambda (x) (+ x a)))))
+               (let ((f (make))) (f 5))))
+           7) 12))
+
+;; --- Module System Tests ---
+(define test-mod (import "tests/test_module_lib.elz"))
+
+(test-case "module import and var reference"
+  (equal? (module-ref test-mod 'test-var) 42))
+
+(test-case "module function reference and call"
+  (let ((f (module-ref test-mod 'test-func)))
+    (equal? (f 8) 50)))
+
+(test-case "module symbol not found"
+  (equal? (try (module-ref test-mod 'non-existent) (catch err #t))
+          #t))
+
+;; --- Run Summary ---
+(report-summary)

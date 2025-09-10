@@ -1,0 +1,31 @@
+;;; This example demonstrates the use of try/catch for error handling.
+
+(define (safe-division num den)
+  (try
+    (/ num den)
+    (catch err
+      (display "Error: Cannot divide ")
+      (display num)
+      (display " by ")
+      (display den)
+      (display ". Reason: ")
+      (display err)
+      (newline)
+      #f))) ;; Return #f on failure
+
+(display "--- Demonstrating Error Handling ---")
+(newline)
+(newline)
+
+(display "Attempting to calculate 10 / 2:")
+(newline)
+(display "  Result: ")
+(display (safe-division 10 2))
+(newline)
+(newline)
+
+(display "Attempting to calculate 10 / 0:")
+(newline)
+(display "  Result: ")
+(display (safe-division 10 0))
+(newline)

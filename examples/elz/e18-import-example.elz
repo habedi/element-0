@@ -1,0 +1,15 @@
+(display "--- Demonstrating Module System ---")
+(newline)
+
+;; Import the module and bind it to the variable 'greetings'.
+(define greetings (import "examples/elz/e17-greetings-lib.elz"))
+
+;; Use module-ref to get exports from the module object.
+(define greet-fn (module-ref greetings 'make-greeting))
+(define msg-val (module-ref greetings 'message))
+
+;; Use the imported values.
+(display (greet-fn "Hassan"))
+(newline)
+(display msg-val)
+(newline)

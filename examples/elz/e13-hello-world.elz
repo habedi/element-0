@@ -1,0 +1,8 @@
+;;; A simple hello world script.
+
+(define name "Element 0")
+
+(display "Hello from ")
+(display name)
+(display "!")
+(newline)

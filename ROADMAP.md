@@ -1,6 +1,6 @@
 ## Feature Roadmap
 
-This document includes the roadmap for the project.
+This document includes the roadmap for the Element 0 programming language and Elz.
 It outlines the features to be implemented and their current status.
 
 > [!IMPORTANT]
@@ -8,15 +8,16 @@ It outlines the features to be implemented and their current status.
 
 ### 1. Host API and FFI
 
-* **Embedding API**:
-    * [x] An `Interpreter` struct that manages all state.
+* **Embedding API**
+    * [x] An `Interpreter` struct that manages all interpreter states.
+    * [x] An `Environment` struct representing variable scopes.
     * [x] `init` and `deinit` functions for lifecycle management.
-    * [x] `evalString` to execute Lisp code from Zig.
-    * [x] `setGlobal` to define Lisp variables from Zig values.
-* **FFI**:
-    * [x] Support for variadic functions. Zig functions can accept a variable number of Lisp arguments.
-    * [x] Graceful error propagation from Zig functions to the Lisp environment.
-    * [x] Support for opaque pointers. Lisp can hold references to Zig data structures.
+    * [x] `evalString` to execute Element 0 code from Zig.
+    * [x] Define global variables from Zig via the root environment.
+* **FFI**
+    * [x] Support for variadic functions. Zig functions can accept a variable number of Element 0 arguments.
+    * [x] Graceful error propagation from Zig functions to the Element 0 environment.
+    * [x] Support for opaque pointers. Element 0 can hold references to Zig data structures.
 
 ### 2. R5RS Compliance
 
@@ -30,6 +31,7 @@ It outlines the features to be implemented and their current status.
 * [x] Strings
 * [x] Procedures (closures)
 * [ ] Vectors
+* [ ] Hash Maps
 * [ ] Ports
 
 #### 2.2. Evaluation Semantics and Special Forms
@@ -42,27 +44,33 @@ It outlines the features to be implemented and their current status.
 * [x] `lambda`
 * [x] `begin`
 * [x] `let`, `let*`, `letrec`
-* [x] `cond`, `[ ] case`, `[x] and`, `[x] or`
+* [x] `cond`
+* [ ] `case`
+* [x] `and`
+* [x] `or`
 
 #### 2.3. Standard Library Procedures
 
-* **Equivalence Predicates**:
+* **Equivalence Predicates**
     * [x] `eq?`, `eqv?`, `equal?`
-* **Type Predicates**:
+* **Type Predicates**
     * [x] `null?`, `boolean?`, `symbol?`, `number?`, `list?`
-* **Pair and List Manipulation**:
+* **Pair and List Manipulation**
     * [x] `cons`, `car`, `cdr`
     * [x] `list`, `length`, `append`, `reverse`, `map`
-    * [ ] `for-each`
-* **Numeric Operations**:
+    * [x] `for-each`
+* **Numeric Operations**
     * [x] `+`, `-`, `*`, `/`
     * [x] `=`, `<`, `>`, `<=`, `>=`
-    * [ ] `abs`, `sqrt`, `max`, `min`
-* **Symbol Handling**:
-    * [ ] `symbol->string`, `string->symbol`
-* **String and Character Manipulation**:
-    * [ ] `string-length`, `string-ref`, `char=?`
-* **Vector Manipulation**:
+    * [x] `abs`
+    * [x] `sqrt`
+    * [x] `max`
+    * [x] `min`
+* **Symbol Handling**
+    * [x] `symbol->string`, `string->symbol`
+* **String and Character Manipulation**
+    * [x] `string-length`, `string-ref`, `char=?`
+* **Vector Manipulation**
     * [ ] `vector`, `make-vector`, `vector-ref`, `vector-set!`
 
 #### 2.4. Syntactic Extensions
@@ -72,21 +80,41 @@ It outlines the features to be implemented and their current status.
 #### 2.5. Advanced Control Flow
 
 * [x] `apply`
-* [ ] `call-with-current-continuation` (`call/cc`)
 * [ ] `eval`
 
 #### 2.6. I/O System
 
-* [ ] `read`, `write`, `display`
-* [ ] `load`
+* [x] `write`
+* [x] `display`
+* [x] `load`
+* [ ] `read`
 * [ ] `open-input-file`, `close-input-port`
 
-### 3. Additional Features
+### 3. Expanded Standard Library
 
-#### 3.1. Standard Library
+* [x] **Math Library**: More common mathematical functions (like trigonometric and logarithmic functions).
+* [x] **List Utilities**: `filter`, `fold-left`, `fold-right`, and other common list processing functions.
+* [ ] **String Utilities**: `substring`, `string-append`, `string-split`, etc.
+* [ ] **Regular Expressions**: A library for advanced text pattern matching.
+* [ ] **OS and Filesystem**: Procedures for file I/O, directory manipulation, and environment variables.
+* [ ] **Advanced I/O**: A `format` procedure and a more comprehensive port system.
+* [ ] **Date and Time**: Utilities for working with dates and times.
 
-* [ ] Math library with common mathematical functions.
-* [ ] List processing utilities like `filter`, `foldl`, `foldr`.
-* [ ] String manipulation functions like `substring`, `string-append`.
-* [ ] Date and time utilities.
-* [ ] File system operations.
+### 4. Advanced Language Features (Post-R5RS)
+
+* [x] **Error Handling**: A mechanism for handling runtime errors, like `try/catch` or `with-handler`.
+* [x] **Module System**: A system for organizing code into reusable and encapsulated modules.
+* [ ] **Hygienic Macros**: A `syntax-rules` or similar system for compile-time metaprogramming.
+* [ ] `call-with-current-continuation` (`call/cc`): Support for first-class continuations.
+
+### 5. Better Host Integration and Embeddability
+
+* [ ] **Advanced FFI**
+    * [ ] Support for passing complex Zig structs.
+    * [ ] Ability to pass Elz closures to Zig as callbacks.
+    * [ ] Automatic type conversions for more data types.
+* [ ] **Sandboxing and Security**
+    * [x] A sandboxed mode to restrict access to I/O and other sensitive operations.
+    * [ ] Host-level controls for memory and execution time limits.
+* [ ] **Serialization**
+    * [ ] Built-in procedures to serialize and deserialize Elz objects (for example, to JSON or S-expressions).

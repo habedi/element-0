@@ -5,16 +5,22 @@ const std = @import("std");
 const core = @import("core.zig");
 const ElzError = @import("errors.zig").ElzError;
 
-/// A generic type for casting Element 0 values to Zig types.
-/// This is a helper for the FFI.
+/// `Caster` is a generic struct that provides a `cast` function to convert a `core.Value`
+/// to a specified Zig type `T`. This is a core component of the FFI mechanism, used
+/// to marshal data from the Elz world to the Zig world.
 ///
-/// - `T`: The Zig type to cast to.
+/// Parameters:
+/// - `T`: The Zig type to cast to. Supported types are `.float` and `.int`.
 pub fn Caster(comptime T: type) type {
     return struct {
         /// Casts a `core.Value` to the specified Zig type `T`.
         ///
+        /// Parameters:
         /// - `v`: The `core.Value` to cast.
-        /// - `return`: The casted value of type `T`, or an error if the cast fails.
+        ///
+        /// Returns:
+        /// The casted value of type `T`, or `ElzError.InvalidArgument` if the `core.Value`
+        /// is of an incompatible type.
         pub fn cast(v: core.Value) ElzError!T {
             return switch (@typeInfo(T)) {
                 .float => switch (v) {
@@ -31,14 +37,21 @@ pub fn Caster(comptime T: type) type {
     };
 }
 
-/// Wraps a Zig function into an Element 0 foreign procedure.
+/// `makeForeignFunc` wraps a Zig function into an Elz foreign procedure.
 /// This function uses comptime reflection to generate a wrapper based on the
 /// signature of the provided Zig function. The wrapper handles the conversion
-/// of arguments from Element 0 values to Zig types and the conversion of the
-/// return value from a Zig type to an Element 0 value.
+/// of arguments from Elz `Value`s to Zig types and the conversion of the
+/// return value from a Zig type to an Elz `Value`.
 ///
-/// - `F`: The Zig function to wrap.
-/// - `return`: A pointer to the wrapped function.
+/// Supported function signatures are:
+/// - Functions with 0, 1, or 2 arguments of type `f64` or integer.
+/// - Variadic functions that take `std.mem.Allocator` and `[]const core.Value` as arguments.
+///
+/// Parameters:
+/// - `F`: The Zig function to wrap. This must be a comptime-known value.
+///
+/// Returns:
+/// A pointer to the wrapped function, which is compatible with `core.Value.foreign_procedure`.
 pub fn makeForeignFunc(comptime F: anytype) *const fn (env: *core.Environment, args: core.ValueList) anyerror!core.Value {
     const FInfo = @typeInfo(@TypeOf(F)).@"fn";
 

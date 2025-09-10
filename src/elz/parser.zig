@@ -7,10 +7,15 @@ const Value = core.Value;
 const ElzError = @import("errors.zig").ElzError;
 
 /// Tokenizes a string of Element 0 source code.
+/// This function breaks the source code into a sequence of tokens, such as
+/// parentheses, symbols, and literals. It also handles comments.
 ///
+/// Parameters:
 /// - `source`: The source code to tokenize.
-/// - `allocator`: The memory allocator to use.
-/// - `return`: An `ArrayList` of tokens.
+/// - `allocator`: The memory allocator to use for the token list.
+///
+/// Returns:
+/// An `ArrayList` of tokens, or an error if tokenization fails.
 fn tokenize(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList([]const u8) {
     var tokens = std.ArrayList([]const u8).init(allocator);
     errdefer tokens.deinit();
@@ -172,10 +177,14 @@ fn parse_atom(token: []const u8, allocator: std.mem.Allocator) ElzError!Value {
 }
 
 /// Reads and parses a single form from a string of source code.
+/// This function is useful for parsing a single expression, such as in a REPL.
 ///
-/// - `source`: The source code to parse.
-/// - `allocator`: The memory allocator to use.
-/// - `return`: The parsed `Value`.
+/// Parameters:
+/// - `source`: The string of source code to parse.
+/// - `allocator`: The memory allocator to use for creating new `Value`s and the token list.
+///
+/// Returns:
+/// The parsed `Value`, or an error if parsing fails (e.g., `ElzError.UnterminatedString`, `ElzError.UnexpectedCloseParen`).
 pub fn read(source: []const u8, allocator: std.mem.Allocator) ElzError!Value {
     var tokens = tokenize(source, allocator) catch |err| {
         return err;
@@ -191,10 +200,14 @@ pub fn read(source: []const u8, allocator: std.mem.Allocator) ElzError!Value {
 }
 
 /// Reads and parses all forms from a string of source code.
+/// This function is useful for parsing a whole file or a block of code.
 ///
-/// - `source`: The source code to parse.
-/// - `allocator`: The memory allocator to use.
-/// - `return`: An `ArrayList` of parsed `Value`s.
+/// Parameters:
+/// - `source`: The string of source code to parse.
+/// - `allocator`: The memory allocator to use for creating new `Value`s and other allocations.
+///
+/// Returns:
+/// An `ArrayList` of parsed `Value`s, or an error if parsing fails.
 pub fn readAll(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList(Value) {
     var tokens = tokenize(source, allocator) catch |err| {
         return err;
@@ -213,4 +226,67 @@ pub fn readAll(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList(
         try forms.append(try parser.parse_form());
     }
     return forms;
+}
+
+test "parser" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+
+    // Test parsing a number
+    var value = try read("42", allocator);
+    try testing.expect(value == Value{ .number = 42 });
+
+    // Test parsing a symbol
+    value = try read("foo", allocator);
+    try testing.expect(value.is_symbol("foo"));
+
+    // Test parsing a string
+    value = try read("\"hello world\"", allocator);
+    try testing.expect(value == Value{ .string = "hello world" });
+
+    // Test parsing a list
+    value = try read("(+ 1 2)", allocator);
+    if (value != .pair) {
+        testing.log.err("Expected a pair, got {any}", .{value});
+        return error.TestExpectedPair;
+    }
+    var p = value.pair;
+    try testing.expect(p.car.is_symbol("+"));
+    p = p.cdr.pair;
+    try testing.expect(p.car == Value{ .number = 1 });
+    p = p.cdr.pair;
+    try testing.expect(p.car == Value{ .number = 2 });
+    try testing.expect(p.cdr == .nil);
+
+    // Test parsing a quoted expression
+    value = try read("'(1 2)", allocator);
+    if (value != .pair) {
+        testing.log.err("Expected a pair, got {any}", .{value});
+        return error.TestExpectedPair;
+    }
+    p = value.pair;
+    try testing.expect(p.car.is_symbol("quote"));
+    p = p.cdr.pair;
+    const inner_list = p.car;
+    if (inner_list != .pair) {
+        testing.log.err("Expected a pair, got {any}", .{inner_list});
+        return error.TestExpectedPair;
+    }
+    p = inner_list.pair;
+    try testing.expect(p.car == Value{ .number = 1 });
+    p = p.cdr.pair;
+    try testing.expect(p.car == Value{ .number = 2 });
+    try testing.expect(p.cdr == .nil);
+
+    // Test unterminated string error
+    var err = read("\"hello", allocator);
+    try testing.expectError(ElzError.UnterminatedString, err);
+
+    // Test unmatched open paren error
+    err = read("(", allocator);
+    try testing.expectError(ElzError.UnmatchedOpenParen, err);
+
+    // Test unexpected close paren error
+    err = read(")", allocator);
+    try testing.expectError(ElzError.UnexpectedCloseParen, err);
 }

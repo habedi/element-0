@@ -1,39 +1,36 @@
-//! This module defines the error set for the Element 0 interpreter.
-//! These errors can occur during parsing, evaluation, or execution.
-
-/// The set of all errors that can be returned by the Elz interpreter.
+/// `ElzError` is the set of all errors that can be returned by the Elz interpreter.
 pub const ElzError = error{
-    /// Indicates that the garbage collector could not allocate more memory.
+    /// The interpreter failed to allocate memory.
     OutOfMemory,
     /// A symbol was not found in the current environment.
     SymbolNotFound,
-    /// A string literal was not terminated with a double quote.
+    /// A string literal was not properly terminated.
     UnterminatedString,
-    /// The input ended unexpectedly, for example in the middle of a list.
+    /// The parser reached the end of the input unexpectedly.
     UnexpectedEndOfInput,
     /// An open parenthesis was not matched with a closing parenthesis.
     UnmatchedOpenParen,
     /// A closing parenthesis was found without a matching open parenthesis.
     UnexpectedCloseParen,
-    /// An invalid character literal was found, e.g., `#\too-long`.
+    /// An invalid character literal was found (e.g., `#\invalid`).
     InvalidCharacterLiteral,
-    /// The input was empty.
+    /// The input to the parser was empty.
     EmptyInput,
-    /// The `quote` special form was called with an invalid number of arguments.
+    /// The `quote` special form was used with invalid arguments.
     QuoteInvalidArguments,
-    /// The `if` special form was called with an invalid number of arguments.
+    /// The `if` special form was used with invalid arguments.
     IfInvalidArguments,
-    /// The `define` special form was called with an invalid number of arguments.
+    /// The `define` special form was used with invalid arguments.
     DefineInvalidArguments,
-    /// The `define` special form was called with an invalid symbol.
+    /// A symbol in a `define` form was invalid.
     DefineInvalidSymbol,
-    /// The `lambda` special form was called with an invalid number of arguments.
+    /// The `lambda` special form was used with invalid arguments.
     LambdaInvalidArguments,
-    /// The parameters of a `lambda` were not valid symbols.
+    /// The parameters of a `lambda` were invalid.
     LambdaInvalidParams,
     /// A procedure was called with the wrong number of arguments.
     WrongArgumentCount,
-    /// A value that is not a procedure was called as if it were.
+    /// A value that is not a procedure was called as if it were one.
     NotAFunction,
     /// A procedure was called with an argument of the wrong type.
     InvalidArgument,
@@ -41,14 +38,16 @@ pub const ElzError = error{
     DivisionByZero,
     /// An error occurred in a foreign function.
     ForeignFunctionError,
-    /// The requested feature is not yet implemented.
+    /// A feature is not yet implemented.
     NotImplemented,
-    /// A dotted pair was not formed correctly.
+    /// A dotted pair was used incorrectly.
     InvalidDottedPair,
-    /// The `set!` special form was called with an invalid number of arguments.
+    /// The `set!` special form was used with invalid arguments.
     SetInvalidArguments,
-    /// The `set!` special form was called with an invalid symbol.
+    /// A symbol in a `set!` form was invalid.
     SetInvalidSymbol,
-    /// The execution fuel/budget has been exceeded.
+    /// The execution budget (fuel) was exceeded.
     ExecutionBudgetExceeded,
+    /// A required primitive function was not found in the environment.
+    MissingPrimitive,
 };

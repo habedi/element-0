@@ -1,0 +1,4 @@
+(define test-var 42)
+
+(define (test-func x)
+  (+ x test-var))
