@@ -23,7 +23,7 @@ Element 0 programming language is a new Lisp dialect inspired by Scheme and aims
 the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to a good degree, but not limited to it.
 
 This project provides an interpreter for the Element 0 language written in Zig.
-The interpreter is named Elz (pronounced like "el-zee") and can be integrated into Zig applications as a scripting
+The interpreter is named Elz (pronounced "el-zee") and can be integrated into Zig applications as a scripting
 engine.
 In addition, Elz comes with a read-eval-print loop (REPL) for interactive development and testing, and easily can be
 extended using Zig code using foreign function interface (FFI) or Element 0 code.
@@ -51,6 +51,8 @@ See the [ROADMAP.md](ROADMAP.md) for the list of implemented and planned feature
 
 Element 0 is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
 
+#### Using the Standalone REPL
+
 1. Clone the repository
    ```sh
    git clone https://github.com/habedi/element-0.git
@@ -66,6 +68,120 @@ Element 0 is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
     ```sh
     ./zig-out/bin/elz-repl --file examples/elz/e13-hello-world.elz
     ```
+
+#### Embedding Elz in your Zig project
+
+You can add Elz to your project as a dependency and use it as a scripting engine.
+
+#### Installation
+
+Run the following command in the root directory of your project to add Elz as a dependency.
+
+```sh
+zig fetch --save=elz "https://github.com/habedi/element-0/archive/main.tar.gz"
+```
+
+This command downloads the latest development version of Elz.
+It adds it to Zig's global cache and updates your project's `build.zig.zon` file.
+
+#### Adding to Your Build Script
+
+Next, modify your `build.zig` file. This will make the Elz library available to your application as a module.
+
+```zig
+const std = @import("std");
+
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    const exe = b.addExecutable(.{
+        .name = "your-app",
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    // 1. Get the Elz dependency object from the builder.
+    const elz_dep = b.dependency("elz", .{});
+
+    // 2. Create a module for the Elz library.
+    const elz_module = elz_dep.module("elz");
+
+    // 3. Add the module to your executable so you can @import("elz").
+    exe.root_module.addImport("elz", elz_module);
+
+    // 4. Link system libraries required by Elz.
+    exe.linkSystemLibrary("c");
+
+    b.installArtifact(exe);
+}
+```
+
+#### Using Elz in Your Application
+
+Finally, you can `@import("elz")` and use the interpreter in your Zig application.
+
+The example below shows how to evaluate a simple script.
+It also shows how to use the FFI to call a Zig function from Elz.
+
+```zig
+const std = @import("std");
+const elz = @import("elz");
+
+// Define a native Zig function you want to call from Elz.
+fn zig_multiply(a: f64, b: f64) f64 {
+    return a * b;
+}
+
+pub fn main() !void {
+    // 1. Initialize the Elz interpreter.
+    var interpreter = try elz.Interpreter.init(.{});
+
+    const stdout = std.io.getStdOut().writer();
+
+    // --- Example 1: Evaluate a simple string of Elz code ---
+    std.debug.print("--- Evaluating simple Elz code ---\n", .{});
+    const source1 = "(* 10 5)";
+    var fuel1: u64 = 1000;
+    const result1 = try interpreter.evalString(source1, &fuel1);
+
+    try stdout.print("Result of {s} is: ", .{source1});
+    try elz.write(result1, stdout);
+    try stdout.print("\n\n", .{});
+
+
+    // --- Example 2: Expose a Zig function to Elz and call it ---
+    std.debug.print("--- Calling a Zig function from Elz ---\n", .{});
+
+    // 2. Register your Zig function with the interpreter.
+    // It will be available in Elz under the name "zig-mul".
+    try elz.env_setup.define_foreign_func(
+        interpreter.root_env,
+        "zig-mul",
+        zig_multiply,
+    );
+
+    // 3. Write and evaluate Elz code that calls your Zig function.
+    const source2 = "(zig-mul 7 6)";
+    var fuel2: u64 = 1000;
+    const result2 = try interpreter.evalString(source2, &fuel2);
+
+    try stdout.print("Result of {s} is: ", .{source2});
+    try elz.write(result2, stdout);
+    try stdout.print("\n", .{});
+}
+```
+
+When you build and run this program, the output will be:
+
+```bash
+--- Evaluating simple Elz code ---
+Result of (* 10 5) is: 50
+
+--- Calling a Zig function from Elz ---
+Result of (zig-mul 7 6) is: 42
+```
 
 -----
 

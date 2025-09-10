@@ -84,10 +84,10 @@ It outlines the features to be implemented and their current status.
 
 #### 2.6. I/O System
 
-* [ ] `read`
 * [x] `write`
 * [x] `display`
 * [x] `load`
+* [ ] `read`
 * [ ] `open-input-file`, `close-input-port`
 
 ### 3. Expanded Standard Library
@@ -102,9 +102,9 @@ It outlines the features to be implemented and their current status.
 
 ### 4. Advanced Language Features (Post-R5RS)
 
-* [x] **Error Handling**: A mechanism for handling runtime errors, such as `try/catch` or `with-handler`.
-* [ ] **Hygienic Macros**: A `syntax-rules` or similar system for powerful and safe compile-time metaprogramming.
-* [ ] **Module System**: A system for organizing code into reusable and encapsulated modules.
+* [x] **Error Handling**: A mechanism for handling runtime errors, like `try/catch` or `with-handler`.
+* [x] **Module System**: A system for organizing code into reusable and encapsulated modules.
+* [ ] **Hygienic Macros**: A `syntax-rules` or similar system for compile-time metaprogramming.
 * [ ] `call-with-current-continuation` (`call/cc`): Support for first-class continuations.
 
 ### 5. Better Host Integration and Embeddability
