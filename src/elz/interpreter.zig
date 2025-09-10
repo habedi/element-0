@@ -5,7 +5,11 @@ const eval = @import("./eval.zig");
 const parser = @import("./parser.zig");
 const gc = @import("gc.zig");
 
-var gc_initialized: bool = false;
+var gc_once = std.once(init_gc);
+
+fn init_gc() void {
+    gc.init();
+}
 
 pub const SandboxFlags = struct {
     enable_math: bool = true,
@@ -22,11 +26,8 @@ pub const Interpreter = struct {
     module_cache: std.StringHashMap(*core.Module),
 
     pub fn init(flags: SandboxFlags) !Interpreter {
+        gc_once.call();
         const allocator = gc.allocator;
-        if (!gc_initialized) {
-            gc.init();
-            gc_initialized = true;
-        }
 
         var self: Interpreter = .{
             .allocator = allocator,

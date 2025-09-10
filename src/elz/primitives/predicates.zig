@@ -12,40 +12,104 @@ fn isProperList(v: Value) bool {
     return cur == .nil;
 }
 
-fn equal_values(a: Value, b: Value) bool {
-    switch (a) {
-        .nil => return b == .nil,
-        .boolean => |av| return switch (b) {
-            .boolean => |bv| av == bv,
+fn is_equal_values(a: core.Value, b: core.Value) bool {
+    return switch (a) {
+        .number => |an| switch (b) {
+            .number => an == b.number,
             else => false,
         },
-        .number => |av| return switch (b) {
-            .number => |bv| av == bv,
+        .symbol => |asym| switch (b) {
+            .symbol => std.mem.eql(u8, asym, b.symbol),
             else => false,
         },
-        .character => |av| return switch (b) {
-            .character => |bv| av == bv,
+        .string => |s| switch (b) {
+            .string => std.mem.eql(u8, s, b.string),
             else => false,
         },
-        .string => |av| return switch (b) {
-            .string => |bv| std.mem.eql(u8, av, bv),
+        .boolean => |ab| switch (b) {
+            .boolean => ab == b.boolean,
             else => false,
         },
-        .symbol => |av| return switch (b) {
-            .symbol => |bv| std.mem.eql(u8, av, bv),
+        .character => |ac| switch (b) {
+            .character => ac == b.character,
             else => false,
         },
-        .closure, .procedure, .foreign_procedure, .opaque_pointer, .module => return is_eqv_internal(a, b),
-        .pair => |pa| return switch (b) {
-            .pair => |pb| equal_values(pa.car, pb.car) and equal_values(pa.cdr, pb.cdr),
+        .pair => |ap| switch (b) {
+            .pair => is_equal_values(ap.car, b.pair.car) and is_equal_values(ap.cdr, b.pair.cdr),
             else => false,
         },
-        .cell => |ca| return switch (b) {
-            .cell => |cb| equal_values(ca.content, cb.content),
+        .closure => |c| switch (b) {
+            .closure => c == b.closure,
             else => false,
         },
-        .unspecified => return b == .unspecified,
+        .procedure => |p| switch (b) {
+            .procedure => p == b.procedure,
+            else => false,
+        },
+        .foreign_procedure => |fp| switch (b) {
+            .foreign_procedure => fp == b.foreign_procedure,
+            else => false,
+        },
+        .opaque_pointer => |op| switch (b) {
+            .opaque_pointer => op == b.opaque_pointer,
+            else => false,
+        },
+        .cell => |cp| switch (b) {
+            .cell => cp == b.cell,
+            else => false,
+        },
+        .module => |m| switch (b) {
+            .module => m == b.module,
+            else => false,
+        },
+        .nil => switch (b) {
+            .nil => true,
+            else => false,
+        },
+        .unspecified => switch (b) {
+            .unspecified => true,
+            else => false,
+        },
+    };
+}
+
+// An iterative implementation of `equal?` that is not vulnerable to stack
+// overflow attacks.
+fn equal_values(allocator: std.mem.Allocator, val1: Value, val2: Value) !bool {
+    var stack = std.ArrayList(struct { a: Value, b: Value }).init(allocator);
+    defer stack.deinit();
+    try stack.append(.{ .a = val1, .b = val2 });
+
+    while (stack.pop()) |pair| {
+        const a = pair.a;
+        const b = pair.b;
+
+        if (!is_equal_values(a, b)) {
+            return true;
+        }
+
+        switch (a) {
+            .nil => if (b != .nil) return false,
+            .boolean => |av| if (b.boolean != av) return false,
+            .number => |av| if (b.number != av) return false,
+            .character => |av| if (b.character != av) return false,
+            .string => |av| if (!std.mem.eql(u8, av, b.string)) return false,
+            .symbol => |av| if (!std.mem.eql(u8, av, b.symbol)) return false,
+            .pair => |pa| {
+                const pb = b.pair;
+                try stack.append(.{ .a = pa.car, .b = pb.car });
+                try stack.append(.{ .a = pa.cdr, .b = pb.cdr });
+            },
+            .cell => |ca| {
+                const cb = b.cell;
+                try stack.append(.{ .a = ca.content, .b = cb.content });
+            },
+            .unspecified => if (b != .unspecified) return false,
+            else => if (!is_eqv_internal(a, b)) return false,
+        }
     }
+
+    return true;
 }
 
 fn is_eqv_internal(a: Value, b: Value) bool {
@@ -153,7 +217,10 @@ pub fn is_eq(interp: *interpreter.Interpreter, env: *core.Environment, args: cor
     return is_eqv(interp, env, args, fuel);
 }
 
-pub fn is_equal(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+pub fn is_equal(interp: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 2) return ElzError.WrongArgumentCount;
-    return Value{ .boolean = equal_values(args.items[0], args.items[1]) };
+    const eql = equal_values(interp.allocator, args.items[0], args.items[1]) catch |err| switch (err) {
+        error.OutOfMemory => return ElzError.OutOfMemory,
+    };
+    return Value{ .boolean = eql };
 }
