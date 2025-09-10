@@ -156,13 +156,24 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
                     };
                     defer interp.allocator.free(source);
 
-                    var module_interp = try interpreter.Interpreter.init(.{});
-                    _ = try module_interp.evalString(source, fuel);
+                    const module_env = try core.Environment.init(interp.allocator, null);
+                    var module_interp_stub: interpreter.Interpreter = .{
+                        .allocator = interp.allocator,
+                        .root_env = module_env,
+                        .last_error_message = null,
+                        .module_cache = undefined,
+                    };
+                    try env_setup.populate_globals(&module_interp_stub);
+
+                    const forms = try parser.readAll(source, interp.allocator);
+                    for (forms.items) |form| {
+                        _ = try eval(&module_interp_stub, &form, module_env, fuel);
+                    }
 
                     const module = try interp.allocator.create(core.Module);
                     module.* = .{ .exports = std.StringHashMap(Value).init(interp.allocator) };
 
-                    var it = module_interp.root_env.bindings.iterator();
+                    var it = module_env.bindings.iterator();
                     while (it.next()) |entry| {
                         try module.exports.put(entry.key_ptr.*, entry.value_ptr.*);
                     }
