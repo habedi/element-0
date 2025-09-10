@@ -91,30 +91,38 @@
 ;; (list-ref lst k)
 ;; Returns the k-th element of the list (0-indexed).
 (define (list-ref lst k)
-  (if (= k 0)
-      (car lst)
-      (list-ref (cdr lst) (- k 1))))
+  (letrec ((iter (lambda (l i)
+                   (if (= i 0)
+                       (car l)
+                       (iter (cdr l) (- i 1))))))
+    (iter lst k)))
 
 ;; (list-tail lst k)
 ;; Returns the sublist of lst starting at the k-th element.
 (define (list-tail lst k)
-  (if (= k 0)
-      lst
-      (list-tail (cdr lst) (- k 1))))
+  (letrec ((iter (lambda (l i)
+                   (if (= i 0)
+                       l
+                       (iter (cdr l) (- i 1))))))
+    (iter lst k)))
 
 ;; (last-element lst)
 ;; Returns the last element in a non-empty list.
 (define (last-element lst)
-  (if (null? (cdr lst))
-      (car lst)
-      (last-element (cdr lst))))
+  (letrec ((iter (lambda (l)
+                   (if (null? (cdr l))
+                       (car l)
+                       (iter (cdr l))))))
+    (iter lst)))
 
 ;; (copy-list lst)
 ;; Returns a new, shallow copy of a list.
 (define (copy-list lst)
-  (if (null? lst)
-      '()
-      (cons (car lst) (copy-list (cdr lst)))))
+  (letrec ((copy-iter (lambda (original accumulator)
+                       (if (null? original)
+                           (reverse accumulator)
+                           (copy-iter (cdr original) (cons (car original) accumulator))))))
+    (copy-iter lst '())))
 
 ;; (indexof item lst)
 ;; Returns the 0-based index of the first occurrence of `item` in `lst`.
@@ -172,10 +180,12 @@
 ;; (for-each proc lst)
 ;; Applies a procedure to each element of a list for its side effects.
 (define (for-each proc lst)
-  (if (not (null? lst))
-      (begin
-        (proc (car lst))
-        (for-each proc (cdr lst)))))
+  (letrec ((iter (lambda (l)
+                   (if (not (null? l))
+                       (begin
+                         (proc (car l))
+                         (iter (cdr l)))))))
+    (iter lst)))
 
 
 ;;; ---------------------------------
@@ -202,27 +212,33 @@
 ;; (fold-right op initial list)
 ;; Applies a binary operator from right to left over a list.
 (define (fold-right op initial lst)
-  (if (null? lst)
-      initial
-      (op (car lst) (fold-right op initial (cdr lst)))))
+  ;; A stack-safe version of fold-right must avoid deep recursion.
+  ;; This version uses fold-left on a reversed list.
+  (fold-left (lambda (acc x) (op x acc)) initial (reverse lst)))
 
 ;; (any? pred lst)
 ;; Returns #t if any element in the list satisfies the predicate.
 (define (any? pred lst)
-  (cond ((null? lst) #f)
-        ((pred (car lst)) #t)
-        (else (any? pred (cdr lst)))))
+  (letrec ((iter (lambda (l)
+                   (cond ((null? l) #f)
+                         ((pred (car l)) #t)
+                         (else (iter (cdr l)))))))
+    (iter lst)))
 
 ;; (every? pred lst)
 ;; Returns #t if every element in the list satisfies the predicate.
 (define (every? pred lst)
-  (cond ((null? lst) #t)
-        ((not (pred (car lst))) #f)
-        (else (every? pred (cdr lst)))))
+  (letrec ((iter (lambda (l)
+                   (cond ((null? l) #t)
+                         ((not (pred (car l))) #f)
+                         (else (iter (cdr l)))))))
+    (iter lst)))
 
 ;; (quicksort lst comparator)
 ;; Sorts a list using the quicksort algorithm.
-;; The comparator should be a function like < or >.
+;; NOTE: This implementation is not tail-recursive and will cause a
+;; stack overflow on large lists. A different algorithm like merge sort
+;; would be better for a production environment.
 (define (quicksort lst comparator)
   (if (null? lst)
       '()

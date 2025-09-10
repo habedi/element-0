@@ -7,32 +7,36 @@ const eval = @import("../eval.zig");
 const Value = core.Value;
 const ElzError = @import("../errors.zig").ElzError;
 
-// A custom writer logic for the `display` primitive.
-// It prints strings without quotes and ensures a trailing newline is appended
-// when the printed string does not already end with '\n'.
-fn display_writer(value: Value, w: anytype) !void {
-    switch (value) {
-        .string => |s| {
-            try w.writeAll(s);
-            if (s.len == 0 or s[s.len - 1] != '\n') {
-                try w.writeAll("\n");
-            }
-        },
-        .character => {
-            // Delegate character formatting to the existing writer and ensure a newline.
-            try writer.write(value, w);
-            try w.writeAll("\n");
-        },
-        else => try writer.write(value, w),
-    }
-}
-
 /// The `display` primitive procedure.
 /// Prints an object to standard output in a human-readable format.
+/// Strings and characters are printed directly without formatting.
 pub fn display(_: *core.Environment, args: core.ValueList) !Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
-    try display_writer(args.items[0], stdout);
+    const aw = stdout.any();
+    const value = args.items[0];
+
+    switch (value) {
+        .string => |s| try aw.writeAll(s),
+        .character => |c| {
+            // First, check if the u32 is in the valid Unicode range.
+            if (c > 0x10FFFF) return ElzError.InvalidArgument;
+
+            // Then, cast to u21 and check if it's a surrogate.
+            const codepoint: u21 = @intCast(c);
+            if (!std.unicode.utf8ValidCodepoint(codepoint)) {
+                return ElzError.InvalidArgument;
+            }
+
+            var buf: [4]u8 = undefined;
+            const len = std.unicode.utf8Encode(codepoint, &buf) catch {
+                return ElzError.InvalidArgument;
+            };
+            try aw.writeAll(buf[0..@as(usize, @intCast(len))]);
+        },
+        // For other types, display falls back to the machine-readable format.
+        else => try writer.write(value, stdout),
+    }
     return Value.unspecified;
 }
 
@@ -50,7 +54,8 @@ pub fn write_proc(_: *core.Environment, args: core.ValueList) !Value {
 pub fn newline(_: *core.Environment, args: core.ValueList) !Value {
     if (args.items.len != 0) return ElzError.WrongArgumentCount;
     const stdout = std.io.getStdOut().writer();
-    try stdout.print("\n", .{});
+    const aw = stdout.any();
+    try aw.print("\n", .{});
     return Value.unspecified;
 }
 
