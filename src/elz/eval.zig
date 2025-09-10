@@ -63,7 +63,7 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
         const env = current_env;
 
         switch (ast.*) {
-            .number, .boolean, .character, .nil, .closure, .procedure, .foreign_procedure, .opaque_pointer, .unspecified => return ast.*,
+            .number, .boolean, .character, .nil, .closure, .procedure, .foreign_procedure, .opaque_pointer, .cell, .unspecified => return ast.*,
             .string => |s| return Value{ .string = try env.allocator.dupe(u8, s) },
             .symbol => |sym| return env.get(sym),
             .pair => |p| {
@@ -336,38 +336,47 @@ pub fn eval(ast_start: *const Value, env_start: *Environment, fuel: *u64) anyerr
                     const bindings_list = p_bindings.car;
                     const body = p_bindings.cdr;
                     const new_env = try Environment.init(env.allocator, env);
-                    var var_symbols = std.ArrayList(Value).init(env.allocator);
-                    defer var_symbols.deinit();
+
+                    var cells = std.ArrayList(*core.Cell).init(env.allocator);
+                    defer cells.deinit();
                     var inits = std.ArrayList(Value).init(env.allocator);
                     defer inits.deinit();
-                    var current_binding_node = bindings_list;
-                    while (current_binding_node != .nil) {
-                        const binding_pair = switch (current_binding_node) {
-                            .pair => |p_rest| p_rest,
+
+                    // 1. Create placeholder cells and bind them.
+                    var node1 = bindings_list;
+                    while (node1 != .nil) {
+                        const binding_pair = switch (node1) {
+                            .pair => |pp| pp,
                             else => return ElzError.InvalidArgument,
                         };
                         const binding = binding_pair.car;
-                        const binding_def_pair = switch (binding) {
-                            .pair => |p_rest| p_rest,
+                        const var_pair = switch (binding) {
+                            .pair => |pp| pp,
                             else => return ElzError.InvalidArgument,
                         };
-                        const var_sym = binding_def_pair.car;
+                        const var_sym = var_pair.car;
                         if (var_sym != .symbol) return ElzError.InvalidArgument;
-                        const init_pair = switch (binding_def_pair.cdr) {
-                            .pair => |p_rest| p_rest,
+                        const init_pair = switch (var_pair.cdr) {
+                            .pair => |pp| pp,
                             else => return ElzError.InvalidArgument,
                         };
-                        const init = init_pair.car;
-                        try var_symbols.append(var_sym);
-                        try inits.append(init);
-                        try new_env.set(var_sym.symbol, .nil);
-                        current_binding_node = binding_pair.cdr;
-                    }
-                    for (var_symbols.items, inits.items) |var_sym, init| {
-                        const value = try eval(&init, new_env, fuel);
-                        try new_env.update(var_sym.symbol, value);
+
+                        const cell = try env.allocator.create(core.Cell);
+                        cell.* = .{ .content = .unspecified };
+                        try new_env.set(var_sym.symbol, Value{ .cell = cell });
+                        try cells.append(cell);
+                        try inits.append(init_pair.car);
+
+                        node1 = binding_pair.cdr;
                     }
 
+                    // 2. Evaluate initializers and update cell contents.
+                    for (cells.items, inits.items) |cell, init| {
+                        const value = try eval(&init, new_env, fuel);
+                        cell.content = value;
+                    }
+
+                    // 3. Evaluate the body in the new environment with TCO.
                     var current_body_node = body;
                     if (current_body_node == .nil) return .nil;
                     while (current_body_node.pair.cdr != .nil) {

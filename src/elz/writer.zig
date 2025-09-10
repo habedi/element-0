@@ -76,6 +76,7 @@ pub fn write(value: Value, writer: anytype) !void {
         .procedure => try aw.print("#<procedure>", .{}),
         .foreign_procedure => try aw.print("#<foreign-procedure>", .{}),
         .opaque_pointer => try aw.print("#<opaque-pointer>", .{}),
+        .cell => try aw.print("#<cell>", .{}),
         .unspecified => try aw.print("#<unspecified>", .{}),
     }
 }

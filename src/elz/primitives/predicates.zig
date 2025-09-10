@@ -43,6 +43,10 @@ fn equal_values(a: Value, b: Value) bool {
             .pair => |pb| equal_values(pa.car, pb.car) and equal_values(pa.cdr, pb.cdr),
             else => false,
         },
+        .cell => |ca| return switch (b) {
+            .cell => |cb| equal_values(ca.content, cb.content),
+            else => false,
+        },
         .unspecified => return b == .unspecified,
     }
 }
@@ -88,6 +92,10 @@ fn is_eqv_internal(a: Value, b: Value) bool {
         },
         .symbol => |av| switch (b) {
             .symbol => |bv| av.ptr == bv.ptr,
+            else => false,
+        },
+        .cell => |av| switch (b) {
+            .cell => |bv| av == bv,
             else => false,
         },
         .unspecified => b == .unspecified,
