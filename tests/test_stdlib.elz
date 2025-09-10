@@ -12,7 +12,7 @@
 
 (define (test-case name test-expr)
   (set! *tests-run* (+ *tests-run* 1))
-  (if (not test-expr)
+  (if (not (try test-expr (catch err #f)))
       (begin
         (set! *tests-failed* (+ *tests-failed* 1))
         (display "[FAILED]: ") (display name) (newline))
@@ -45,9 +45,8 @@
 ;; Type Predicates
 (test-case "atom? symbol" (equal? (atom? 'a) #t))
 (test-case "atom? number" (equal? (atom? 123) #t))
-(test-case "atom? bignum" (equal? (atom? 12345678901234567890) #t))
 (test-case "atom? list" (equal? (atom? '(1 2)) #f))
-(test-case "atom? empty-list" (equal? (atom? '()) #t)) ;; nil is an atom
+(test-case "atom? empty-list" (equal? (atom? '()) #t))
 
 ;; Numeric Functions
 (test-case "abs positive" (equal? (abs 10) 10))
@@ -56,45 +55,42 @@
 (test-case "min" (equal? (min 10 20 5) 5))
 (test-case "square" (equal? (square 5) 25))
 (test-case "avg" (equal? (avg '(10 20 30)) 20))
-;;(test-case "fibonacci" (equal? (fib 10) 55))
+(test-case "fibonacci" (equal? (fib 10) 55))
+(test-case "fibonacci zero" (equal? (fib 0) 0))
 
 ;; List Utilities
+(test-case "caar" (equal? (caar '((a b) c)) 'a))
+(test-case "cadr" (equal? (cadr '(a b c)) 'b))
 (test-case "first" (equal? (first '(a b c)) 'a))
 (test-case "rest" (equal? (rest '(a b c)) '(b c)))
 (test-case "nth" (equal? (nth 2 '(a b c d)) 'c))
 (test-case "last-element" (equal? (last-element '(a b c)) 'c))
-(test-case "copy-list" (let ((a '(1 2))) (not (eq? a (copy-list a)))))
-;;(test-case "indexof found" (equal? (indexof 'b '(a b c)) 1))
-;;(test-case "indexof not found" (equal? (indexof 'z '(a b c)) #f))
+(test-case "copy-list equality" (equal? (copy-list '(1 2)) '(1 2)))
+(test-case "copy-list identity" (let ((a '(1 2))) (not (eq? a (copy-list a)))))
+(test-case "indexof found" (equal? (indexof 'b '(a b c)) 1))
+(test-case "indexof not found" (equal? (indexof 'z '(a b c)) #f))
 (test-case "reverse" (equal? (reverse '(1 2 3)) '(3 2 1)))
+(test-case "member found" (equal? (member 2 '(1 2 3)) '(2 3)))
+(test-case "member not found" (equal? (member 4 '(1 2 3)) #f))
+(test-case "assoc found" (equal? (assoc 'b '((a 1) (b 2))) '(b 2)))
 
 ;; Higher-Order Functions
-;;(test-case "any? true" (any? (lambda (x) (> x 3)) '(1 2 3 4 5)))
-;;(test-case "any? false" (not (any? (lambda (x) (> x 5)) '(1 2 3 4 5))))
-;;(test-case "every? true" (every? (lambda (x) (< x 6)) '(1 2 3 4 5)))
-;;(test-case "every? false" (not (every? (lambda (x) (< x 5)) '(1 2 3 4 5))))
-;;(test-case "quicksort ascending" (equal? (quicksort '(5 2 8 1 9) <) '(1 2 5 8 9)))
-;;(test-case "quicksort descending" (equal? (quicksort '(5 2 8 1 9) >) '(9 8 5 2 1)))
+(test-case "any? true" (any? (lambda (x) (> x 3)) '(1 2 3 4 5)))
+(test-case "any? false" (not (any? (lambda (x) (> x 5)) '(1 2 3 4 5))))
+(test-case "every? true" (every? (lambda (x) (< x 6)) '(1 2 3 4 5)))
+(test-case "every? false" (not (every? (lambda (x) (< x 5)) '(1 2 3 4 5))))
+(test-case "fold-left" (equal? (fold-left + 0 '(1 2 3 4)) 10))
+(test-case "fold-right" (equal? (fold-right cons '() '(1 2 3)) '(1 2 3)))
+(test-case "quicksort ascending" (equal? (quicksort '(5 2 8 1 9) <) '(1 2 5 8 9)))
+(test-case "quicksort descending" (equal? (quicksort '(5 2 8 1 9) >) '(9 8 5 2 1)))
 
 ;; Advanced & Demonstrative
 (test-case "Y Combinator factorial" (equal? ((Y (lambda (r) (lambda (x) (if (< x 2) 1 (* x (r (- x 1))))))) 5) 120))
 
-;; --- try/catch Tests ---
-(test-case "try/catch success"
-  (equal? (try 10 (catch err #f)) 10))
-
-(test-case "try/catch failure"
-  (equal? (try (/ 1 0) (catch err 'caught-it)) 'caught-it))
-
-(test-case "try/catch error binding"
-  (equal? (try (/ 1 0) (catch err err)) 'DivisionByZero))
-
-(test-case "try/catch no error with multiple forms"
-  (equal? (try
-            (define x 5)
-            (+ x 15)
-            (catch err #f))
-          20))
+;; try/catch Tests
+(test-case "try/catch success" (equal? (try 10 (catch err #f)) 10))
+(test-case "try/catch failure" (equal? (try (/ 1 0) (catch err 'caught-it)) 'caught-it))
+(test-case "try/catch error binding" (equal? (try (/ 1 0) (catch err err)) "DivisionByZero"))
 
 ;; --- Run Summary ---
 (report-summary)

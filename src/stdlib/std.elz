@@ -1,77 +1,53 @@
 ;;
 ;; Element 0 Standard Library
-;; Version: 0.1.0-alpha.2
+;; Version: 0.1.0-alpha.4
 ;;
 
-;;; ---------------------------------
-;;; Version Information
-;;; ---------------------------------
-
-(define *elz-stdlib-version* "0.1.0-alpha.2")
-
+(define *elz-stdlib-version* "0.1.0-alpha.4")
 
 ;;; ---------------------------------
 ;;; Logical and Boolean Functions
 ;;; ---------------------------------
 
-;; (not x)
-;; Returns #f if x is not #f. Otherwise, returns #t.
 (define (not x)
   (if x #f #t))
 
-;; (!= x y)
-;; Returns #t if x and y are not structurally equal.
 (define (!= x y)
   (not (equal? x y)))
-
 
 ;;; ---------------------------------
 ;;; Type Predicates
 ;;; ---------------------------------
 
-;; (atom? x)
-;; Returns #t if x is an atom (i.e., not a pair).
-;; Note: This includes numbers, symbols, booleans, and nil.
 (define (atom? x)
   (not (pair? x)))
-
 
 ;;; ---------------------------------
 ;;; Numeric Functions
 ;;; ---------------------------------
 
-;; (abs x)
-;; Returns the absolute value of a number.
 (define (abs x)
-  (if (< x 0)
-      (- x)
-      x))
+  (if (< x 0) (- x) x))
 
-;; (square x)
-;; Returns the square of a number.
 (define (square x)
   (* x x))
 
-;; (avg lst)
-;; Returns the average of a list of numbers. Returns 0 for an empty list.
 (define (avg lst)
   (if (null? lst)
       0
       (/ (apply + lst) (length lst))))
 
-;; (fib n)
-;; Returns the n-th number in the Fibonacci sequence (recursively).
 (define (fib n)
-  (cond ((= n 0) 0)
-        ((= n 1) 1)
-        (else (+ (fib (- n 1)) (fib (- n 2))))))
-
+  (letrec ((iter (lambda (count a b)
+                   (if (= count 0)
+                       a
+                       (iter (- count 1) b (+ a b))))))
+    (iter n 0 1)))
 
 ;;; ---------------------------------
 ;;; List Utilities
 ;;; ---------------------------------
 
-;; Classic CAR/CDR combinations
 (define (caar x) (car (car x)))
 (define (cadr x) (car (cdr x)))
 (define (cdar x) (cdr (car x)))
@@ -80,16 +56,12 @@
 (define (caddr x) (car (cdr (cdr x))))
 (define (cdddr x) (cdr (cdr (cdr x))))
 
-;; List Accessor Aliases
 (define (first x) (car x))
 (define (rest x) (cdr x))
 (define (head x) (car x))
 (define (tail x) (cdr x))
 (define (nth k lst) (list-ref lst k))
 
-
-;; (list-ref lst k)
-;; Returns the k-th element of the list (0-indexed).
 (define (list-ref lst k)
   (letrec ((iter (lambda (l i)
                    (if (= i 0)
@@ -97,8 +69,6 @@
                        (iter (cdr l) (- i 1))))))
     (iter lst k)))
 
-;; (list-tail lst k)
-;; Returns the sublist of lst starting at the k-th element.
 (define (list-tail lst k)
   (letrec ((iter (lambda (l i)
                    (if (= i 0)
@@ -106,51 +76,39 @@
                        (iter (cdr l) (- i 1))))))
     (iter lst k)))
 
-;; (last-element lst)
-;; Returns the last element in a non-empty list.
 (define (last-element lst)
-  (letrec ((iter (lambda (l)
-                   (if (null? (cdr l))
-                       (car l)
-                       (iter (cdr l))))))
-    (iter lst)))
+  (if (null? (cdr lst))
+      (car lst)
+      (last-element (cdr lst))))
 
-;; (copy-list lst)
-;; Returns a new, shallow copy of a list.
 (define (copy-list lst)
-  (letrec ((copy-iter (lambda (original accumulator)
-                       (if (null? original)
-                           (reverse accumulator)
-                           (copy-iter (cdr original) (cons (car original) accumulator))))))
-    (copy-iter lst '())))
+  (if (null? lst)
+      '()
+      (cons (car lst) (copy-list (cdr lst)))))
 
-;; (indexof item lst)
-;; Returns the 0-based index of the first occurrence of `item` in `lst`.
-;; Returns #f if the item is not found.
 (define (indexof item lst)
   (letrec ((find (lambda (sublist index)
-                  (cond ((null? sublist) #f)
-                        ((equal? (car sublist) item) index)
-                        (else (find (cdr sublist) (+ index 1)))))))
+                  (if (null? sublist)
+                      #f
+                      (if (equal? (car sublist) item)
+                          index
+                          (find (cdr sublist) (+ 1 index)))))))
     (find lst 0)))
 
-;; (member obj lst)
-;; Returns the first sublist of lst whose car is `equal?` to obj.
-;; Returns #f if obj does not occur in lst.
 (define (member obj lst)
-  (cond ((null? lst) #f)
-        ((equal? obj (car lst)) lst)
-        (else (member obj (cdr lst)))))
+  (if (null? lst)
+      #f
+      (if (equal? obj (car lst))
+          lst
+          (member obj (cdr lst)))))
 
-;; (assoc obj alist)
-;; Finds a key in an association list.
 (define (assoc obj alist)
-  (cond ((null? alist) #f)
-        ((equal? obj (caar alist)) (car alist))
-        (else (assoc obj (cdr alist)))))
+  (if (null? alist)
+      #f
+      (if (equal? obj (caar alist))
+          (car alist)
+          (assoc obj (cdr alist)))))
 
-;; (take n lst)
-;; Returns the first n elements of a list.
 (define (take n lst)
   (letrec ((take-iter (lambda (count l acc)
                        (if (or (= count 0) (null? l))
@@ -160,41 +118,28 @@
                                       (cons (car l) acc))))))
     (take-iter n lst '())))
 
-;; (drop n lst)
-;; Returns the list without its first n elements.
 (define (drop n lst)
   (list-tail lst n))
 
-;; (last-pair lst)
-;; Returns the last pair in a non-empty list.
 (define (last-pair lst)
   (if (null? (cdr lst))
       lst
       (last-pair (cdr lst))))
 
-
 ;;; ---------------------------------
 ;;; Iteration
 ;;; ---------------------------------
 
-;; (for-each proc lst)
-;; Applies a procedure to each element of a list for its side effects.
 (define (for-each proc lst)
-  (letrec ((iter (lambda (l)
-                   (if (not (null? l))
-                       (begin
-                         (proc (car l))
-                         (iter (cdr l)))))))
-    (iter lst)))
-
+  (if (not (null? lst))
+      (begin
+        (proc (car lst))
+        (for-each proc (cdr lst)))))
 
 ;;; ---------------------------------
 ;;; Higher-Order Functions
 ;;; ---------------------------------
 
-;; (filter predicate list)
-;; Returns a new list containing only the elements of the input list
-;; for which the predicate returns true.
 (define (filter pred lst)
   (letrec ((filter-iter (lambda (l acc)
                          (cond ((null? l) (reverse acc))
@@ -202,57 +147,52 @@
                                (else (filter-iter (cdr l) acc))))))
     (filter-iter lst '())))
 
-;; (fold-left op initial list)
-;; Applies a binary operator from left to right over a list.
 (define (fold-left op initial lst)
+  (letrec ((iter (lambda (l acc)
+                   (if (null? l)
+                       acc
+                       (iter (cdr l) (op acc (car l)))))))
+    (iter lst initial)))
+
+(define (fold-right op initial lst)
   (if (null? lst)
       initial
-      (fold-left op (op initial (car lst)) (cdr lst))))
+      (op (car lst) (fold-right op initial (cdr lst)))))
 
-;; (fold-right op initial list)
-;; Applies a binary operator from right to left over a list.
-(define (fold-right op initial lst)
-  ;; A stack-safe version of fold-right must avoid deep recursion.
-  ;; This version uses fold-left on a reversed list.
-  (fold-left (lambda (acc x) (op x acc)) initial (reverse lst)))
-
-;; (any? pred lst)
-;; Returns #t if any element in the list satisfies the predicate.
 (define (any? pred lst)
-  (letrec ((iter (lambda (l)
-                   (cond ((null? l) #f)
-                         ((pred (car l)) #t)
-                         (else (iter (cdr l)))))))
-    (iter lst)))
+  (if (null? lst)
+      #f
+      (if (pred (car lst))
+          #t
+          (any? pred (cdr lst)))))
 
-;; (every? pred lst)
-;; Returns #t if every element in the list satisfies the predicate.
 (define (every? pred lst)
-  (letrec ((iter (lambda (l)
-                   (cond ((null? l) #t)
-                         ((not (pred (car l))) #f)
-                         (else (iter (cdr l)))))))
-    (iter lst)))
+  (if (null? lst)
+      #t
+      (if (not (pred (car lst)))
+          #f
+          (every? pred (cdr lst)))))
 
-;; (quicksort lst comparator)
-;; Sorts a list using the quicksort algorithm.
-;; NOTE: This implementation is not tail-recursive and will cause a
-;; stack overflow on large lists. A different algorithm like merge sort
-;; would be better for a production environment.
 (define (quicksort lst comparator)
   (if (null? lst)
       '()
-      (let ((pivot (car lst)))
-        (append (quicksort (filter (lambda (n) (comparator n pivot)) (cdr lst)) comparator)
-                (list pivot)
-                (quicksort (filter (lambda (n) (not (comparator n pivot))) (cdr lst)) comparator)))))
+      (let ((pivot (car lst))
+            (rest (cdr lst)))
+        (letrec ((partition (lambda (l less-than greater-than)
+                             (if (null? l)
+                                 (append (quicksort less-than comparator)
+                                         (cons pivot (quicksort greater-than comparator)))
+                                 (let ((elem (car l)))
+                                   (if (comparator elem pivot)
+                                       (partition (cdr l) (cons elem less-than) greater-than)
+                                       (partition (cdr l) less-than (cons elem greater-than))))))))
+          (partition rest '() '())))))
 
 
 ;;; ---------------------------------
 ;;; Advanced & Demonstrative
 ;;; ---------------------------------
 
-;; The Y Combinator (for anonymous recursion)
 (define Y
   (lambda (f)
     ((lambda (g) (g g))
