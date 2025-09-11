@@ -45,7 +45,7 @@ This lets you change parts of your application without the need to recompile the
 See the [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features.
 
 > [!IMPORTANT]
-> Element 0 is in early development, so bugs and breaking changes are expected.
+> This project is in early development, so bugs and breaking changes are expected.
 > Please use the [issues page](https://github.com/habedi/element-0/issues) to report bugs or request features.
 
 ---
