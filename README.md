@@ -185,7 +185,7 @@ Result of (zig-mul 7 6) is: 42
 ```
 
 > [!IMPORTANT]
-> Element 0 is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
+> Elz is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
 
 -----
 
