@@ -10,6 +10,7 @@ pub const core = @import("elz/core.zig");
 pub const Value = core.Value;
 pub const Environment = core.Environment;
 pub const ElzError = @import("elz/errors.zig").ElzError;
+pub const gc = @import("elz/gc.zig");
 
 // Helper functions for interacting with the interpreter and its values.
 pub const write = @import("elz/writer.zig").write;

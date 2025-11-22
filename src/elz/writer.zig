@@ -9,69 +9,68 @@ const Value = core.Value;
 /// - `value`: The `Value` to be written.
 /// - `writer`: The writer to print to. This can be any `std.io.Writer`.
 pub fn write(value: Value, writer: anytype) !void {
-    const aw = writer.any();
     switch (value) {
-        .symbol => |s| try aw.print("{s}", .{s}),
-        .number => |n| try aw.print("{d}", .{n}),
-        .boolean => |b| try aw.writeAll(if (b) "#t" else "#f"),
-        .nil => try aw.print("()", .{}),
+        .symbol => |s| try writer.print("{s}", .{s}),
+        .number => |n| try writer.print("{d}", .{n}),
+        .boolean => |b| try writer.writeAll(if (b) "#t" else "#f"),
+        .nil => try writer.writeAll("()"),
         .character => |c| {
-            try aw.writeAll("#\\");
+            try writer.writeAll("#\\");
             switch (c) {
-                ' ' => try aw.writeAll("space"),
-                '\n' => try aw.writeAll("newline"),
+                ' ' => try writer.writeAll("space"),
+                '\n' => try writer.writeAll("newline"),
                 else => {
                     if (c > 0x10FFFF) {
-                        try aw.writeAll("invalid-char");
+                        try writer.writeAll("invalid-char");
                         return;
                     }
 
                     const codepoint: u21 = @intCast(c);
                     if (!std.unicode.utf8ValidCodepoint(codepoint)) {
-                        try aw.writeAll("invalid-char");
+                        try writer.writeAll("invalid-char");
                         return;
                     }
 
                     var buf: [4]u8 = undefined;
                     const len = std.unicode.utf8Encode(codepoint, &buf) catch {
-                        try aw.writeAll("invalid-char");
+                        try writer.writeAll("invalid-char");
                         return;
                     };
-                    try aw.writeAll(buf[0..@as(usize, @intCast(len))]);
+                    try writer.writeAll(buf[0..@as(usize, @intCast(len))]);
                 },
             }
         },
         .string => |s| {
-            try aw.print("\"{s}\"", .{s});
+            try writer.print("\"{s}\"", .{s});
         },
         .pair => |p| {
-            try aw.print("(", .{});
+            try writer.writeAll("(");
             var current = p;
             while (true) {
                 try write(current.car, writer);
                 switch (current.cdr) {
                     .pair => |next_p| {
-                        try aw.print(" ", .{});
+                        try writer.writeAll(" ");
                         current = next_p;
                     },
                     .nil => {
                         break;
                     },
                     else => {
-                        try aw.print(" . ", .{});
+                        try writer.writeAll(" . ");
                         try write(current.cdr, writer);
                         break;
                     },
                 }
             }
-            try aw.print(")", .{});
+            try writer.writeAll(")");
         },
-        .closure => try aw.print("#<closure>", .{}),
-        .procedure => try aw.print("#<procedure>", .{}),
-        .foreign_procedure => try aw.print("#<foreign-procedure>", .{}),
-        .opaque_pointer => try aw.print("#<opaque-pointer>", .{}),
-        .cell => try aw.print("#<cell>", .{}),
-        .module => try aw.print("#<module>", .{}),
-        .unspecified => try aw.print("#<unspecified>", .{}),
+        .closure => try writer.writeAll("#<closure>"),
+        .procedure => try writer.writeAll("#<procedure>"),
+        .foreign_procedure => try writer.writeAll("#<foreign-procedure>"),
+        .opaque_pointer => try writer.writeAll("#<opaque-pointer>"),
+        .cell => try writer.writeAll("#<cell>"),
+        .module => try writer.writeAll("#<module>"),
+        .unspecified => try writer.writeAll("#<unspecified>"),
     }
 }

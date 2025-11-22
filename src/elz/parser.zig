@@ -16,9 +16,9 @@ const ElzError = @import("errors.zig").ElzError;
 ///
 /// Returns:
 /// An `ArrayList` of tokens, or an error if tokenization fails.
-fn tokenize(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList([]const u8) {
-    var tokens = std.ArrayList([]const u8).init(allocator);
-    errdefer tokens.deinit();
+fn tokenize(source: []const u8, allocator: std.mem.Allocator) !std.ArrayListUnmanaged([]const u8) {
+    var tokens = std.ArrayListUnmanaged([]const u8){};
+    errdefer tokens.deinit(allocator);
     var i: usize = 0;
     while (i < source.len) {
         const char = source[i];
@@ -30,7 +30,7 @@ fn tokenize(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList([]c
             },
             ' ', '\t', '\r', '\n' => i += 1,
             '(', ')', '\'' => {
-                try tokens.append(source[i .. i + 1]);
+                try tokens.append(allocator, source[i .. i + 1]);
                 i += 1;
             },
             '"' => {
@@ -43,7 +43,7 @@ fn tokenize(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList([]c
                     }
                 }
                 if (j >= source.len) return ElzError.UnterminatedString;
-                try tokens.append(source[i .. j + 1]);
+                try tokens.append(allocator, source[i .. j + 1]);
                 i = j + 1;
             },
             else => {
@@ -51,7 +51,7 @@ fn tokenize(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList([]c
                 while (j < source.len and !std.ascii.isWhitespace(source[j]) and source[j] != '(' and source[j] != ')' and source[j] != '\'' and source[j] != ';') {
                     j += 1;
                 }
-                try tokens.append(source[i..j]);
+                try tokens.append(allocator, source[i..j]);
                 i = j;
             },
         }
@@ -84,8 +84,8 @@ const Parser = struct {
             return Value{ .pair = p2 };
         }
         if (std.mem.eql(u8, token, "(")) {
-            var values = std.ArrayList(Value).init(self.allocator);
-            defer values.deinit();
+            var values = std.ArrayListUnmanaged(Value){};
+            defer values.deinit(self.allocator);
             while (true) {
                 if (self.position >= self.tokens.items.len) {
                     return ElzError.UnmatchedOpenParen;
@@ -121,7 +121,7 @@ const Parser = struct {
                     }
                     return result;
                 }
-                try values.append(try self.parse_form());
+                try values.append(self.allocator, try self.parse_form());
             }
         } else if (std.mem.eql(u8, token, ")")) {
             return ElzError.UnexpectedCloseParen;
@@ -140,28 +140,28 @@ fn parse_atom(token: []const u8, allocator: std.mem.Allocator) ElzError!Value {
     if (std.mem.eql(u8, token, "#t")) return Value{ .boolean = true };
     if (std.mem.eql(u8, token, "#f")) return Value{ .boolean = false };
     if (token.len >= 2 and token[0] == '"' and token[token.len - 1] == '"') {
-        var unescaped = std.ArrayList(u8).init(allocator);
-        defer unescaped.deinit();
+        var unescaped = std.ArrayListUnmanaged(u8){};
+        defer unescaped.deinit(allocator);
         var i: usize = 1;
         while (i < token.len - 1) {
             if (token[i] == '\\' and i + 1 < token.len - 1) {
                 switch (token[i + 1]) {
-                    'n' => try unescaped.append('\n'),
-                    't' => try unescaped.append('\t'),
-                    '\\' => try unescaped.append('\\'),
-                    '"' => try unescaped.append('"'),
+                    'n' => try unescaped.append(allocator, '\n'),
+                    't' => try unescaped.append(allocator, '\t'),
+                    '\\' => try unescaped.append(allocator, '\\'),
+                    '"' => try unescaped.append(allocator, '"'),
                     else => {
-                        try unescaped.append('\\');
-                        try unescaped.append(token[i + 1]);
+                        try unescaped.append(allocator, '\\');
+                        try unescaped.append(allocator, token[i + 1]);
                     },
                 }
                 i += 2;
             } else {
-                try unescaped.append(token[i]);
+                try unescaped.append(allocator, token[i]);
                 i += 1;
             }
         }
-        return Value{ .string = try unescaped.toOwnedSlice() };
+        return Value{ .string = try unescaped.toOwnedSlice(allocator) };
     }
     if (token.len > 2 and token[0] == '#' and token[1] == '\\') {
         const char_name = token[2..];
@@ -208,12 +208,12 @@ pub fn read(source: []const u8, allocator: std.mem.Allocator) ElzError!Value {
 ///
 /// Returns:
 /// An `ArrayList` of parsed `Value`s, or an error if parsing fails.
-pub fn readAll(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList(Value) {
+pub fn readAll(source: []const u8, allocator: std.mem.Allocator) !std.ArrayListUnmanaged(Value) {
     var tokens = tokenize(source, allocator) catch |err| {
         return err;
     };
-    defer tokens.deinit();
-    if (tokens.items.len == 0) return std.ArrayList(Value).init(allocator);
+    defer tokens.deinit(allocator);
+    if (tokens.items.len == 0) return .{};
 
     var parser = Parser{
         .tokens = tokens,
@@ -221,9 +221,9 @@ pub fn readAll(source: []const u8, allocator: std.mem.Allocator) !std.ArrayList(
         .allocator = allocator,
     };
 
-    var forms = std.ArrayList(Value).init(allocator);
+    var forms = std.ArrayListUnmanaged(Value){};
     while (parser.position < parser.tokens.items.len) {
-        try forms.append(try parser.parse_form());
+        try forms.append(allocator, try parser.parse_form());
     }
     return forms;
 }

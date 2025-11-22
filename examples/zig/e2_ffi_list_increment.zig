@@ -9,14 +9,14 @@ fn increment_list_elements(allocator: std.mem.Allocator, args: []const elz.Value
     if (list_head != .pair and list_head != .nil) {
         return elz.ElzError.InvalidArgument;
     }
-    var numbers = std.ArrayList(f64).init(allocator);
-    defer numbers.deinit();
+    var numbers = std.ArrayListUnmanaged(f64){};
+    defer numbers.deinit(allocator);
     var current_node = list_head;
     while (current_node != .nil) {
         switch (current_node) {
             .pair => |p| {
                 switch (p.car) {
-                    .number => |n| try numbers.append(n),
+                    .number => |n| try numbers.append(allocator, n),
                     else => return elz.ElzError.InvalidArgument,
                 }
                 current_node = p.cdr;
@@ -56,8 +56,12 @@ pub fn main() !void {
     std.debug.print("Evaluating Element 0 code: {s}\n", .{source});
     var fuel: u64 = 1000;
     const result = try interpreter.evalString(source, &fuel);
-    const stdout = std.io.getStdOut().writer();
-    try stdout.print("Result: ", .{});
+    var buffer: [4096]u8 = undefined;
+    const stdout_file = std.fs.File.stdout();
+    var stdout_writer = stdout_file.writer(&buffer);
+    const stdout = &stdout_writer.interface;
+    try stdout.writeAll("Result: ");
     try elz.write(result, stdout);
-    try stdout.print("\n", .{});
+    try stdout.writeAll("\n");
+    try stdout.flush();
 }

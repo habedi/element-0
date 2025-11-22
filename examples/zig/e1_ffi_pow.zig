@@ -12,8 +12,12 @@ pub fn main() !void {
     std.debug.print("Evaluating Element 0 code: {s}\n", .{source});
     var fuel: u64 = 1000;
     const result = try interpreter.evalString(source, &fuel);
-    const stdout = std.io.getStdOut().writer();
-    try stdout.print("Result: ", .{});
+    var buffer: [4096]u8 = undefined;
+    const stdout_file = std.fs.File.stdout();
+    var stdout_writer = stdout_file.writer(&buffer);
+    const stdout = &stdout_writer.interface;
+    try stdout.writeAll("Result: ");
     try elz.write(result, stdout);
-    try stdout.print("\n", .{});
+    try stdout.writeAll("\n");
+    try stdout.flush();
 }

@@ -16,9 +16,9 @@ fn isProperList(v: Value) bool {
 /// An iterative implementation of `equal?` that is not vulnerable to stack
 /// overflow attacks.
 fn equal_values(allocator: std.mem.Allocator, val1: Value, val2: Value) !bool {
-    var stack = std.ArrayList(struct { a: Value, b: Value }).init(allocator);
-    defer stack.deinit();
-    try stack.append(.{ .a = val1, .b = val2 });
+    var stack = std.ArrayListUnmanaged(struct { a: Value, b: Value }){};
+    defer stack.deinit(allocator);
+    try stack.append(allocator, .{ .a = val1, .b = val2 });
 
     while (stack.pop()) |pair| {
         const a = pair.a;
@@ -46,12 +46,12 @@ fn equal_values(allocator: std.mem.Allocator, val1: Value, val2: Value) !bool {
             .pair => |p1| {
                 const p2 = b.pair;
                 // Push cdr then car, so the stack (LIFO) processes car first.
-                try stack.append(.{ .a = p1.cdr, .b = p2.cdr });
-                try stack.append(.{ .a = p1.car, .b = p2.car });
+                try stack.append(allocator, .{ .a = p1.cdr, .b = p2.cdr });
+                try stack.append(allocator, .{ .a = p1.car, .b = p2.car });
             },
             .cell => |c1| {
                 const c2 = b.cell;
-                try stack.append(.{ .a = c1.content, .b = c2.content });
+                try stack.append(allocator, .{ .a = c1.content, .b = c2.content });
             },
             else => {
                 // For all other types, if they have the same type but are not

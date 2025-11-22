@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/habedi/element-0/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-view-blue?style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
 [![Examples](https://img.shields.io/badge/examples-view-green?style=flat&labelColor=282c34&logo=zig)](https://github.com/habedi/element-0/tree/main/examples)
-[![Zig Version](https://img.shields.io/badge/Zig-0.14.1-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
+[![Zig Version](https://img.shields.io/badge/Zig-0.15.2-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
 [![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
 
 A small embeddable Lisp for the Zig ecosystem λ
@@ -185,7 +185,7 @@ Result of (zig-mul 7 6) is: 42
 ```
 
 > [!IMPORTANT]
-> Elz is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
+> Elz is implemented in Zig 0.15.2 and needs at least Zig 0.15.2 to build.
 
 -----
 

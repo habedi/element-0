@@ -6,14 +6,18 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // --- GC dependency ---
-    const gc = b.addStaticLibrary(.{
-        .name = "gc",
+    const gc_module = b.createModule(.{
         .target = target,
         .optimize = optimize,
     });
+
+    const gc = b.addLibrary(.{
+        .name = "gc",
+        .root_module = gc_module,
+    });
     {
-        var cflags: std.ArrayListUnmanaged([]const u8) = .empty;
-        var src_files: std.ArrayListUnmanaged([]const u8) = .empty;
+        var cflags: std.ArrayListUnmanaged([]const u8) = .{};
+        var src_files: std.ArrayListUnmanaged([]const u8) = .{};
         defer cflags.deinit(b.allocator);
         defer src_files.deinit(b.allocator);
 
@@ -35,7 +39,7 @@ pub fn build(b: *std.Build) void {
         }) catch unreachable;
 
         // Add platform-specific source files for threading
-        switch (target.result.os.tag) {
+        switch (target.query.os_tag orelse .linux) {
             .windows => {
                 src_files.appendSlice(b.allocator, &.{ "win32_threads.c", "pthread_support.c" }) catch unreachable;
             },
@@ -58,7 +62,7 @@ pub fn build(b: *std.Build) void {
     // --- Library Setup ---
     const lib_source = b.path("src/lib.zig");
 
-    const lib_module = b.addModule("elz", .{
+    const lib_module = b.createModule(.{
         .root_source_file = lib_source,
         .target = target,
         .optimize = optimize,
@@ -72,6 +76,13 @@ pub fn build(b: *std.Build) void {
     lib.linkLibrary(gc);
     lib.linkSystemLibrary("c");
     b.installArtifact(lib);
+
+    // Export the module so downstream projects can use it
+    _ = b.addModule("elz", .{
+        .root_source_file = lib_source,
+        .target = target,
+        .optimize = optimize,
+    });
 
     // --- REPL Executable ---
     const repl_module = b.createModule(.{
@@ -87,7 +98,7 @@ pub fn build(b: *std.Build) void {
     });
 
     // --- Linenoise dependency (POSIX only) ---
-    if (target.result.os.tag != .windows) {
+    if (target.query.os_tag orelse .linux != .windows) {
         repl_exe.addIncludePath(b.path("external/linenoise"));
         repl_exe.addCSourceFile(.{ .file = b.path("external/linenoise/linenoise.c") });
     }

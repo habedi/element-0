@@ -231,6 +231,18 @@ pub fn min(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLi
     return Value{ .number = min_val };
 }
 
+/// `mod` is the implementation of the `%` primitive function.
+/// It returns the remainder of dividing the first argument by the second.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing two numbers.
+pub fn mod(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number or args.items[1] != .number) return ElzError.InvalidArgument;
+    if (args.items[1].number == 0) return ElzError.DivisionByZero;
+    return Value{ .number = @mod(args.items[0].number, args.items[1].number) };
+}
+
 test "math primitives" {
     const allocator = std.testing.allocator;
     const testing = std.testing;
