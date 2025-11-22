@@ -13,7 +13,6 @@ jobs:
   call_tests:
     uses: ./.github/workflows/tests.yml
 
-  # This job creates the draft GitHub Release. It depends on the 'test' job.
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
@@ -38,13 +37,12 @@ jobs:
           draft: false
           prerelease: false
 
-  # This job builds the project on each platform and uploads the binaries.
   build-and-upload:
     name: Build and Upload
-    needs: create-release # This job runs after the release has been created.
+    needs: create-release
     runs-on: ${{ matrix.os }}
     permissions:
-      contents: write # Required to upload assets to the release.
+      contents: write
     strategy:
       matrix:
         include:
