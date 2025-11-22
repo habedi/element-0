@@ -22,33 +22,42 @@ fn displayValue(_: *elz.Interpreter, value: elz.Value, writer: anytype) !void {
 }
 
 fn exec(interpreter: *elz.Interpreter, source: []const u8) !void {
-    const forms = elz.parser.readAll(source, interpreter.allocator) catch |err| {
+    var forms = elz.parser.readAll(source, interpreter.allocator) catch |err| {
         std.debug.print("Parse Error: {s}\n", .{@errorName(err)});
         return err;
     };
+    defer forms.deinit(interpreter.allocator);
     if (forms.items.len == 0) return;
 
     var last_result: elz.Value = .nil;
     for (forms.items) |form| {
         var fuel: u64 = 1_000_000;
         last_result = elz.eval.eval(interpreter, &form, interpreter.root_env, &fuel) catch |err| {
-            const stdout = std.io.getStdOut().writer();
-            try stdout.print("--- Runtime Error ---\n", .{});
+            var buffer: [4096]u8 = undefined;
+            const stdout_file = std.fs.File.stdout();
+            var stdout_writer = stdout_file.writer(&buffer);
+            const stdout = &stdout_writer.interface;
+            try stdout.writeAll("--- Runtime Error ---\n");
             if (interpreter.last_error_message) |msg| {
                 try stdout.print("Message: {s}\n", .{msg});
             } else {
                 try stdout.print("Error: {s}\n", .{@errorName(err)});
             }
-            try stdout.print("In form: ", .{});
+            try stdout.writeAll("In form: ");
             try elz.write(form, stdout);
-            try stdout.print("\n", .{});
+            try stdout.writeAll("\n");
+            try stdout.flush();
             return;
         };
     }
 
-    const stdout = std.io.getStdOut().writer();
+    var buffer: [4096]u8 = undefined;
+    const stdout_file = std.fs.File.stdout();
+    var stdout_writer = stdout_file.writer(&buffer);
+    const stdout = &stdout_writer.interface;
     if (last_result != .unspecified) {
         try displayValue(interpreter, last_result, stdout);
+        try stdout.flush();
     }
 }
 
@@ -79,11 +88,16 @@ fn repl(interpreter: *elz.Interpreter) !void {
         _ = linenoise.linenoiseHistoryAdd(line);
 
         eval_line: {
-            const forms = elz.parser.readAll(line_slice, interpreter.allocator) catch |err| {
-                const stdout = std.io.getStdOut().writer();
+            var forms = elz.parser.readAll(line_slice, interpreter.allocator) catch |err| {
+                var buffer: [4096]u8 = undefined;
+                const stdout_file = std.fs.File.stdout();
+                var stdout_writer = stdout_file.writer(&buffer);
+                const stdout = &stdout_writer.interface;
                 try stdout.print("Parse Error: {s}\n", .{@errorName(err)});
+                try stdout.flush();
                 break :eval_line;
             };
+            defer forms.deinit(interpreter.allocator);
 
             if (forms.items.len == 0) break :eval_line;
 
@@ -91,18 +105,26 @@ fn repl(interpreter: *elz.Interpreter) !void {
             for (forms.items) |form| {
                 var fuel: u64 = 1_000_000;
                 last_result = elz.eval.eval(interpreter, &form, interpreter.root_env, &fuel) catch |err| {
-                    const stdout = std.io.getStdOut().writer();
+                    var buffer: [4096]u8 = undefined;
+                    const stdout_file = std.fs.File.stdout();
+                    var stdout_writer = stdout_file.writer(&buffer);
+                    const stdout = &stdout_writer.interface;
                     if (interpreter.last_error_message) |msg| {
                         try stdout.print("Error: {s}\n", .{msg});
                     } else {
                         try stdout.print("Error: {s}\n", .{@errorName(err)});
                     }
+                    try stdout.flush();
                     break :eval_line;
                 };
             }
-            const stdout = std.io.getStdOut().writer();
+            var buffer: [4096]u8 = undefined;
+            const stdout_file = std.fs.File.stdout();
+            var stdout_writer = stdout_file.writer(&buffer);
+            const stdout = &stdout_writer.interface;
             if (last_result != .unspecified) {
                 try displayValue(interpreter, last_result, stdout);
+                try stdout.flush();
             }
         }
     }
@@ -132,7 +154,9 @@ fn rootExec(ctx: chilli.CommandContext) !void {
 /// This function initializes the interpreter and the command-line interface.
 /// It can either start a REPL or execute a source file, based on the command-line arguments.
 pub fn main() anyerror!void {
-    var interpreter = try elz.Interpreter.init(.{});
+    const interpreter_ptr = try elz.gc.allocator.create(elz.Interpreter);
+    interpreter_ptr.* = try elz.Interpreter.init(.{});
+    elz.gc.add_roots(@intFromPtr(interpreter_ptr), @intFromPtr(interpreter_ptr) + @sizeOf(elz.Interpreter));
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
@@ -153,5 +177,5 @@ pub fn main() anyerror!void {
         .default_value = .{ .String = "" },
     });
 
-    try root_cmd.run(&interpreter);
+    try root_cmd.run(interpreter_ptr);
 }

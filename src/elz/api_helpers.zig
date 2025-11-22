@@ -15,7 +15,7 @@ const Value = core.Value;
 /// Returns:
 /// A new slice containing the values from the list, or an error if the input is not a proper list.
 pub fn listToSlice(allocator: std.mem.Allocator, list_head: Value) ![]Value {
-    var items = std.ArrayList(Value).init(allocator);
+    var items = std.ArrayListUnmanaged(Value){};
 
     var current_node = list_head;
     while (current_node != .nil) {
@@ -23,10 +23,10 @@ pub fn listToSlice(allocator: std.mem.Allocator, list_head: Value) ![]Value {
             .pair => |pair_val| pair_val,
             else => return ElzError.InvalidArgument, // Not a proper list
         };
-        try items.append(p.car);
+        try items.append(allocator, p.car);
         current_node = p.cdr;
     }
-    return items.toOwnedSlice();
+    return items.toOwnedSlice(allocator);
 }
 
 /// Converts a Zig slice of `Value`s to an Element 0 proper list.

@@ -8,9 +8,9 @@
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/habedi/element-0/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/actions/workflows/tests.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/habedi/element-0/blob/main/LICENSE)
-[![Docs](https://img.shields.io/badge/docs-view-blue?style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
+[![Docs](https://img.shields.io/badge/docs-read-blue?style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
 [![Examples](https://img.shields.io/badge/examples-view-green?style=flat&labelColor=282c34&logo=zig)](https://github.com/habedi/element-0/tree/main/examples)
-[![Zig Version](https://img.shields.io/badge/Zig-0.14.1-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
+[![Zig Version](https://img.shields.io/badge/Zig-0.15.2-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
 [![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
 
 A small embeddable Lisp for the Zig ecosystem λ
@@ -19,8 +19,9 @@ A small embeddable Lisp for the Zig ecosystem λ
 
 ---
 
-Element 0 programming language is a new Lisp dialect inspired by Scheme and aims to be compliant with
-the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to a good degree, but not limited to it.
+Element 0 programming language is a new Lisp dialect inspired by Scheme.
+It aims to be compliant with the [R5RS](https://www-sop.inria.fr/indes/fp/Bigloo/doc/r5rs-7.html) standard to a good
+degree, but not limited to it.
 
 This project provides an interpreter for the Element 0 language written in Zig.
 The interpreter is named Elz (pronounced "el-zee") and can be integrated into Zig applications as a scripting engine.
@@ -44,14 +45,12 @@ This lets you change parts of your application without the need to recompile the
 See the [ROADMAP.md](ROADMAP.md) for the list of implemented and planned features.
 
 > [!IMPORTANT]
-> Element 0 is in early development, so bugs and breaking changes are expected.
+> This project is in early development, so bugs and breaking changes are expected.
 > Please use the [issues page](https://github.com/habedi/element-0/issues) to report bugs or request features.
 
 ---
 
 ### Getting Started
-
-Element 0 is implemented in Zig 0.14.1 and needs at least Zig 0.14.1 to build.
 
 #### Using the Standalone REPL
 
@@ -184,6 +183,9 @@ Result of (* 10 5) is: 50
 --- Calling a Zig function from Elz ---
 Result of (zig-mul 7 6) is: 42
 ```
+
+> [!IMPORTANT]
+> Elz is implemented and tested in Zig 0.15.2.
 
 -----
 

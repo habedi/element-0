@@ -31,6 +31,7 @@ pub fn populate_math(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "log", core.Value{ .procedure = math.log });
     try interp.root_env.set(interp, "max", core.Value{ .procedure = math.max });
     try interp.root_env.set(interp, "min", core.Value{ .procedure = math.min });
+    try interp.root_env.set(interp, "%", core.Value{ .procedure = math.mod });
 }
 
 /// Populates the interpreter's root environment with list manipulation primitive functions.

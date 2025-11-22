@@ -59,8 +59,7 @@ pub const Interpreter = struct {
             .module_cache = std.StringHashMap(*core.Module).init(allocator),
         };
 
-        const root_env_ptr = gc.allocUncollectable(@sizeOf(core.Environment)) orelse return error.OutOfMemory;
-        const root_env: *core.Environment = @ptrCast(@alignCast(root_env_ptr));
+        const root_env = try allocator.create(core.Environment);
         root_env.* = .{
             .bindings = std.StringHashMap(core.Value).init(allocator),
             .outer = null,
@@ -92,7 +91,8 @@ pub const Interpreter = struct {
         try env_setup.populate_process(&self);
 
         const std_lib_source = @embedFile("../stdlib/std.elz");
-        const std_lib_forms = try parser.readAll(std_lib_source, allocator);
+        var std_lib_forms = try parser.readAll(std_lib_source, allocator);
+        defer std_lib_forms.deinit(allocator);
 
         var fuel: u64 = 1_000_000;
         for (std_lib_forms.items) |form| {
@@ -116,12 +116,21 @@ pub const Interpreter = struct {
     /// Returns:
     /// The `core.Value` of the last evaluated expression, or an error if parsing or evaluation fails.
     pub fn evalString(self: *Interpreter, source: []const u8, fuel: *u64) !core.Value {
-        const forms = try parser.readAll(source, self.allocator);
+        var forms = try parser.readAll(source, self.allocator);
+        defer forms.deinit(self.allocator);
 
         var result: core.Value = .unspecified;
         for (forms.items) |form| {
             result = try eval.eval(self, &form, self.root_env, fuel);
         }
         return result;
+    }
+
+    /// Cleans up resources used by the interpreter.
+    /// This method should be called when the interpreter is no longer needed.
+    /// Note: With garbage collection, most memory is automatically managed,
+    /// but this ensures proper cleanup of the module cache.
+    pub fn deinit(self: *Interpreter) void {
+        self.module_cache.deinit();
     }
 };

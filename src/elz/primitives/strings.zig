@@ -45,17 +45,17 @@ pub fn string_length(_: *interpreter.Interpreter, _: *core.Environment, args: co
 /// Parameters:
 /// - `args`: A `ValueList` of strings to be appended.
 pub fn string_append(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
-    var buffer = std.ArrayList(u8).init(env.allocator);
-    defer buffer.deinit();
+    var buffer = std.ArrayListUnmanaged(u8){};
+    defer buffer.deinit(env.allocator);
 
     for (args.items) |arg| {
         switch (arg) {
-            .string => |s| try buffer.appendSlice(s),
+            .string => |s| try buffer.appendSlice(env.allocator, s),
             else => return ElzError.InvalidArgument,
         }
     }
 
-    return Value{ .string = try buffer.toOwnedSlice() };
+    return Value{ .string = try buffer.toOwnedSlice(env.allocator) };
 }
 
 /// `char_eq` checks if two characters are equal.

@@ -42,9 +42,10 @@ comptime {
 pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
-    const t = target.result;
+    const t = target.query;
 
-    const default_enable_threads = !t.cpu.arch.isWasm(); // emscripten/wasi
+    // Default to enabled threads (can be overridden with -Denable_threads=false for wasm)
+    const default_enable_threads = true;
 
     // Customize build by passing "-D<option_name>[=false]" in command line.
     const enable_cplusplus = b.option(bool, "enable_cplusplus", "C++ support") orelse false;
@@ -84,9 +85,9 @@ pub fn build(b: *std.Build) void {
     const install_headers = b.option(bool, "install_headers", "Install header and pkg-config metadata files") orelse true;
     // TODO: support `with_libatomic_ops`, `without_libatomic_ops`
 
-    var source_files: std.ArrayListUnmanaged([]const u8) = .empty;
+    var source_files: std.ArrayListUnmanaged([]const u8) = .{};
     defer source_files.deinit(b.allocator);
-    var flags: std.ArrayListUnmanaged([]const u8) = .empty;
+    var flags: std.ArrayListUnmanaged([]const u8) = .{};
     defer flags.deinit(b.allocator);
 
     // Always enabled.
@@ -101,7 +102,7 @@ pub fn build(b: *std.Build) void {
     }) catch unreachable;
 
     // Disable MS `crt` security warnings reported e.g. for `getenv`, `strcpy`.
-    if (t.abi == .msvc) {
+    if (t.abi orelse .gnu == .msvc) {
         flags.append(b.allocator, "-D _CRT_SECURE_NO_DEPRECATE") catch unreachable;
     }
 
@@ -131,7 +132,7 @@ pub fn build(b: *std.Build) void {
         if (enable_parallel_mark) {
             flags.append(b.allocator, "-D PARALLEL_MARK") catch unreachable;
         }
-        if (t.os.tag != .windows) { // assume `pthreads`
+        if (t.os_tag orelse .linux != .windows) { // assume `pthreads`
             // TODO: support cygwin when supported by zig
             // Zig comes with clang which supports GCC atomic intrinsics.
             flags.append(b.allocator, "-D GC_BUILTIN_ATOMIC") catch unreachable;
@@ -141,7 +142,7 @@ pub fn build(b: *std.Build) void {
                 "pthread_start.c",
                 "pthread_support.c",
             }) catch unreachable;
-            if (t.os.tag.isDarwin()) {
+            if ((t.os_tag orelse .linux).isDarwin()) {
                 source_files.append(b.allocator, "darwin_stop_world.c") catch unreachable;
             } else {
                 source_files.append(b.allocator, "pthread_stop_world.c") catch unreachable;
@@ -220,7 +221,7 @@ pub fn build(b: *std.Build) void {
     if (enable_gc_debug) {
         flags.append(b.allocator, "-D DBG_HDRS_ALL") catch unreachable;
         flags.append(b.allocator, "-D KEEP_BACK_PTRS") catch unreachable;
-        if (t.os.tag == .linux) {
+        if (t.os_tag orelse .linux == .linux) {
             flags.append(b.allocator, "-D MAKE_BACK_GRAPH") catch unreachable;
             // TODO: do not define `SAVE_CALL_COUNT` for e2k
             flags.append(b.allocator, "-D SAVE_CALL_COUNT=8") catch unreachable;
@@ -243,7 +244,7 @@ pub fn build(b: *std.Build) void {
         } else {
             flags.append(b.allocator, "-D REDIRECT_MALLOC=GC_malloc") catch unreachable;
         }
-        if (t.os.tag == .windows) {
+        if (t.os_tag orelse .linux == .windows) {
             flags.append(b.allocator, "-D REDIRECT_MALLOC_IN_HEADER") catch unreachable;
         } else {
             flags.append(b.allocator, "-D GC_USE_DLOPEN_WRAP") catch unreachable;
@@ -297,14 +298,14 @@ pub fn build(b: *std.Build) void {
     if (enable_single_obj_compilation or (build_shared_libs and !disable_single_obj_compilation)) {
         source_files.clearAndFree(b.allocator);
         source_files.append(b.allocator, "extra/gc.c") catch unreachable;
-        if (enable_threads and !t.os.tag.isDarwin() and t.os.tag != .windows) {
+        if (enable_threads and !(t.os_tag orelse .linux).isDarwin() and t.os_tag orelse .linux != .windows) {
             flags.append(b.allocator, "-D GC_PTHREAD_START_STANDALONE") catch unreachable;
             source_files.append(b.allocator, "pthread_start.c") catch unreachable;
         }
     }
 
     // Add implementation of `backtrace` and `backtrace_symbols`.
-    if (t.abi == .msvc) {
+    if (t.abi orelse .gnu == .msvc) {
         source_files.append(b.allocator, "extra/msvc_dbg.c") catch unreachable;
     }
 
@@ -320,7 +321,7 @@ pub fn build(b: *std.Build) void {
 
     if (build_shared_libs) {
         flags.append(b.allocator, "-D GC_DLL") catch unreachable;
-        if (t.abi == .msvc) {
+        if (t.abi orelse .gnu == .msvc) {
             // TODO: depend on `user32.lib` file instead
             flags.append(b.allocator, "-D DONT_USE_USER32_DLL") catch unreachable;
         } else {
@@ -330,7 +331,7 @@ pub fn build(b: *std.Build) void {
         }
     } else {
         flags.append(b.allocator, "-D GC_NOT_DLL") catch unreachable;
-        if (t.os.tag == .windows) {
+        if (t.os_tag orelse .linux == .windows) {
             // Do not require the clients to link with `user32` system library.
             flags.append(b.allocator, "-D DONT_USE_USER32_DLL") catch unreachable;
         }
@@ -343,7 +344,7 @@ pub fn build(b: *std.Build) void {
     // `-U GC_NO_SIGSETJMP`
     flags.append(b.allocator, "-D HAVE_SYS_TYPES_H") catch unreachable;
 
-    if (t.abi == .msvc) {
+    if (t.abi orelse .gnu == .msvc) {
         // To workaround "extension used" error reported
         // for `__try`/`__finally`.
         flags.append(b.allocator, "-D NO_SEH_AVAILABLE") catch unreachable;
@@ -351,12 +352,12 @@ pub fn build(b: *std.Build) void {
         flags.append(b.allocator, "-D HAVE_UNISTD_H") catch unreachable;
     }
 
-    const have_getcontext = !t.abi.isMusl() and t.os.tag != .windows;
+    const have_getcontext = !(t.abi orelse .gnu).isMusl() and t.os_tag orelse .linux != .windows;
     if (!have_getcontext) {
         flags.append(b.allocator, "-D NO_GETCONTEXT") catch unreachable;
     }
 
-    if (!t.os.tag.isDarwin() and t.os.tag != .windows) {
+    if (!(t.os_tag orelse .linux).isDarwin() and t.os_tag orelse .linux != .windows) {
         // `dl_iterate_phdr` exists (as a strong symbol).
         flags.append(b.allocator, "-D HAVE_DL_ITERATE_PHDR") catch unreachable;
         if (enable_threads) {
@@ -369,34 +370,34 @@ pub fn build(b: *std.Build) void {
     flags.append(b.allocator, "-D GC_REQUIRE_WCSDUP") catch unreachable;
 
     // `pthread_setname_np`, if available, may have 1, 2 or 3 arguments.
-    if (t.os.tag.isDarwin()) {
+    if ((t.os_tag orelse .linux).isDarwin()) {
         flags.append(b.allocator, "-D HAVE_PTHREAD_SETNAME_NP_WITHOUT_TID") catch unreachable;
-    } else if (t.os.tag == .linux) {
+    } else if (t.os_tag orelse .linux == .linux) {
         flags.append(b.allocator, "-D HAVE_PTHREAD_SETNAME_NP_WITH_TID") catch unreachable;
     } else {
         // TODO: support `HAVE_PTHREAD_SETNAME_NP_WITH_TID_AND_ARG`
         // and `HAVE_PTHREAD_SET_NAME_NP` targets.
     }
 
-    if (t.os.tag != .windows) {
+    if (t.os_tag orelse .linux != .windows) {
         // Define to use `dladdr` function (used for debugging).
         flags.append(b.allocator, "-D HAVE_DLADDR") catch unreachable;
     }
 
     // TODO: as of zig 0.14, exception.h and getsect.h are not provided
     // by zig itself for Darwin target.
-    if (t.os.tag.isDarwin() and !target.query.isNative()) {
+    if ((t.os_tag orelse .linux).isDarwin() and !target.query.isNative()) {
         flags.append(b.allocator, "-D MISSING_MACH_O_GETSECT_H") catch unreachable;
         flags.append(b.allocator, "-D NO_MPROTECT_VDB") catch unreachable;
     }
 
     if (enable_cplusplus and enable_werror) {
-        if (build_shared_libs and t.os.tag == .windows or t.abi == .msvc) {
+        if (build_shared_libs and t.os_tag orelse .linux == .windows or t.abi orelse .gnu == .msvc) {
             // Avoid "replacement operator new[] cannot be declared inline"
             // warnings.
             flags.append(b.allocator, "-Wno-inline-new-delete") catch unreachable;
         }
-        if (t.abi == .msvc) {
+        if (t.abi orelse .gnu == .msvc) {
             // TODO: as of zig 0.14,
             // "argument unused during compilation: -nostdinc++" warning is
             // reported if using MS compiler.
@@ -564,7 +565,7 @@ pub fn build(b: *std.Build) void {
         addTest(b, gc, test_step, flags, "initfromthreadtest", "tests/initfromthread.c");
         addTest(b, gc, test_step, flags, "subthreadcreatetest", "tests/subthreadcreate.c");
         addTest(b, gc, test_step, flags, "threadleaktest", "tests/threadleak.c");
-        if (t.os.tag != .windows) {
+        if (t.os_tag orelse .linux != .windows) {
             addTest(b, gc, test_step, flags, "threadkeytest", "tests/threadkey.c");
         }
     }

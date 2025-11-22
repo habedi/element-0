@@ -129,10 +129,11 @@ fn evalImport(
     };
     defer interp.allocator.free(source_bytes);
 
-    const forms = parser.readAll(source_bytes, interp.allocator) catch {
+    var forms = parser.readAll(source_bytes, interp.allocator) catch {
         interp.last_error_message = "Failed to parse module file.";
         return ElzError.InvalidArgument;
     };
+    defer forms.deinit(interp.allocator);
 
     const module_env = try core.Environment.init(interp.allocator, interp.root_env);
 
@@ -147,14 +148,14 @@ fn evalImport(
         .exports = std.StringHashMap(core.Value).init(interp.allocator),
     };
 
-    var temp = std.ArrayList(struct { k: []const u8, v: core.Value }).init(interp.allocator);
-    defer temp.deinit();
+    var temp = std.ArrayListUnmanaged(struct { k: []const u8, v: core.Value }){};
+    defer temp.deinit(interp.allocator);
 
     {
         var it = module_env.bindings.iterator();
         while (it.next()) |entry| {
             if (entry.key_ptr.*.len > 0 and entry.key_ptr.*[0] == '_') continue;
-            try temp.append(.{ .k = entry.key_ptr.*, .v = entry.value_ptr.* });
+            try temp.append(interp.allocator, .{ .k = entry.key_ptr.*, .v = entry.value_ptr.* });
         }
     }
 
@@ -430,8 +431,8 @@ fn evalLet(interp: *interpreter.Interpreter, first: Value, rest: Value, env: *En
 
 /// Evaluates a `try` special form.
 fn evalTry(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64) !Value {
-    var try_body_forms = std.ArrayList(core.Value).init(env.allocator);
-    defer try_body_forms.deinit();
+    var try_body_forms = std.ArrayListUnmanaged(core.Value){};
+    defer try_body_forms.deinit(env.allocator);
     var catch_clause: ?core.Value = null;
     var current_node = rest;
     while (current_node != .nil) {
@@ -444,7 +445,7 @@ fn evalTry(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fue
             catch_clause = form;
             break;
         }
-        try try_body_forms.append(form);
+        try try_body_forms.append(env.allocator, form);
         current_node = node_p.cdr;
     }
 

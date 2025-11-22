@@ -1,0 +1,85 @@
+;;; Association List (Hash Table Simulation)
+;;; Demonstrates key-value storage and lookup
+
+(display "Association List (Hash Table) Example")
+(newline)
+
+;; An association list is a list of (key . value) pairs
+;; Example: ((name . "Alice") (age . 30) (city . "NYC"))
+
+(define (alist-set alist key value)
+  "Add or update a key-value pair in the association list"
+  (if (null? alist)
+      (list (cons key value))
+      (if (equal? (car (car alist)) key)
+          (cons (cons key value) (cdr alist))
+          (cons (car alist) (alist-set (cdr alist) key value)))))
+
+(define (alist-get alist key default)
+  "Get value for key, or return default if not found"
+  (if (null? alist)
+      default
+      (if (equal? (car (car alist)) key)
+          (cdr (car alist))
+          (alist-get (cdr alist) key default))))
+
+(define (alist-has? alist key)
+  "Check if key exists in association list"
+  (if (null? alist)
+      #f
+      (if (equal? (car (car alist)) key)
+          #t
+          (alist-has? (cdr alist) key))))
+
+(define (alist-keys alist)
+  "Get all keys from association list"
+  (if (null? alist)
+      '()
+      (cons (car (car alist)) (alist-keys (cdr alist)))))
+
+(define (alist-values alist)
+  "Get all values from association list"
+  (if (null? alist)
+      '()
+      (cons (cdr (car alist)) (alist-values (cdr alist)))))
+
+;; Create a person record
+(define person '())
+(set! person (alist-set person 'name "Alice"))
+(set! person (alist-set person 'age 30))
+(set! person (alist-set person 'city "New York"))
+(set! person (alist-set person 'occupation "Engineer"))
+
+(display "Person record: ")
+(display person)
+(newline)
+
+(display "Name: ")
+(display (alist-get person 'name "Unknown"))
+(newline)
+
+(display "Age: ")
+(display (alist-get person 'age 0))
+(newline)
+
+(display "Has 'city'? ")
+(display (alist-has? person 'city))
+(newline)
+
+(display "Has 'email'? ")
+(display (alist-has? person 'email))
+(newline)
+
+(display "All keys: ")
+(display (alist-keys person))
+(newline)
+
+(display "All values: ")
+(display (alist-values person))
+(newline)
+
+;; Update a value
+(set! person (alist-set person 'age 31))
+(display "Updated age: ")
+(display (alist-get person 'age 0))
+(newline)

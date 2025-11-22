@@ -1,0 +1,277 @@
+;;; Advanced Test Suite for Complex Features
+;;; Tests data structures, algorithms, and functional patterns
+
+(display "Running Advanced Feature Tests...")
+(newline)
+
+;; Test framework
+(define *tests-run* 0)
+(define *tests-failed* 0)
+
+(define (test-case name test-expr)
+  (set! *tests-run* (+ *tests-run* 1))
+  (if (not (try test-expr (catch err #f)))
+      (begin
+        (set! *tests-failed* (+ *tests-failed* 1))
+        (display "[FAILED]: ") (display name) (newline))
+      (begin
+        (display "[PASSED]: ") (display name) (newline))))
+
+(define (report-summary)
+  (newline)
+  (display "--------------------") (newline)
+  (display "Tests Finished.") (newline)
+  (display "Total run: ") (display *tests-run*) (newline)
+  (display "Passed: ") (display (- *tests-run* *tests-failed*)) (newline)
+  (display "Failed: ") (display *tests-failed*) (newline)
+  (newline)
+  (if (> *tests-failed* 0)
+      (begin
+        (display "RESULT: FAILED")
+        (newline)
+        (exit 1))
+      (begin
+        (display "RESULT: PASSED")
+        (newline)
+        (exit 0))))
+
+;;; Binary Search Tree Tests
+
+(define (make-node value left right)
+  (list value left right))
+
+(define (node-value node) (car node))
+(define (node-left node) (car (cdr node)))
+(define (node-right node) (car (cdr (cdr node))))
+
+(define (bst-insert tree value)
+  (if (null? tree)
+      (make-node value '() '())
+      (if (< value (node-value tree))
+          (make-node (node-value tree)
+                     (bst-insert (node-left tree) value)
+                     (node-right tree))
+          (make-node (node-value tree)
+                     (node-left tree)
+                     (bst-insert (node-right tree) value)))))
+
+(define (bst-contains? tree value)
+  (if (null? tree)
+      #f
+      (if (= value (node-value tree))
+          #t
+          (if (< value (node-value tree))
+              (bst-contains? (node-left tree) value)
+              (bst-contains? (node-right tree) value)))))
+
+(test-case "BST insert and contains"
+  (begin
+    (define tree '())
+    (set! tree (bst-insert tree 50))
+    (set! tree (bst-insert tree 30))
+    (set! tree (bst-insert tree 70))
+    (and (bst-contains? tree 50)
+         (bst-contains? tree 30)
+         (bst-contains? tree 70)
+         (not (bst-contains? tree 100)))))
+
+(test-case "BST empty tree"
+  (not (bst-contains? '() 42)))
+
+(test-case "BST single node"
+  (begin
+    (define tree (bst-insert '() 42))
+    (and (bst-contains? tree 42)
+         (not (bst-contains? tree 41)))))
+
+;;; Association List Tests
+
+(define (alist-set alist key value)
+  (if (null? alist)
+      (list (cons key value))
+      (if (equal? (car (car alist)) key)
+          (cons (cons key value) (cdr alist))
+          (cons (car alist) (alist-set (cdr alist) key value)))))
+
+(define (alist-get alist key default)
+  (if (null? alist)
+      default
+      (if (equal? (car (car alist)) key)
+          (cdr (car alist))
+          (alist-get (cdr alist) key default))))
+
+(define (alist-has? alist key)
+  (if (null? alist)
+      #f
+      (if (equal? (car (car alist)) key)
+          #t
+          (alist-has? (cdr alist) key))))
+
+(test-case "Alist set and get"
+  (begin
+    (define alist '())
+    (set! alist (alist-set alist 'name "Alice"))
+    (set! alist (alist-set alist 'age 30))
+    (and (equal? (alist-get alist 'name "Unknown") "Alice")
+         (equal? (alist-get alist 'age 0) 30))))
+
+(test-case "Alist update existing key"
+  (begin
+    (define alist (list (cons 'x 10)))
+    (set! alist (alist-set alist 'x 20))
+    (equal? (alist-get alist 'x 0) 20)))
+
+(test-case "Alist has? predicate"
+  (begin
+    (define alist (list (cons 'a 1) (cons 'b 2)))
+    (and (alist-has? alist 'a)
+         (alist-has? alist 'b)
+         (not (alist-has? alist 'c)))))
+
+(test-case "Alist default value"
+  (equal? (alist-get '() 'missing 42) 42))
+
+;;; Sorting Algorithm Tests
+
+(define (floor-div a b)
+  (- (/ a b) (% (/ a b) 1)))
+
+(define (merge-sort lst)
+  (if (<= (length lst) 1)
+      lst
+      (let ((mid (floor-div (length lst) 2)))
+        (merge (merge-sort (take lst mid))
+               (merge-sort (drop lst mid))))))
+
+(define (merge left right)
+  (cond
+    ((null? left) right)
+    ((null? right) left)
+    ((<= (car left) (car right))
+     (cons (car left) (merge (cdr left) right)))
+    (else
+     (cons (car right) (merge left (cdr right))))))
+
+(define (take lst n)
+  (if (or (= n 0) (null? lst))
+      '()
+      (cons (car lst) (take (cdr lst) (- n 1)))))
+
+(define (drop lst n)
+  (if (or (= n 0) (null? lst))
+      lst
+      (drop (cdr lst) (- n 1))))
+
+(test-case "Merge sort empty list"
+  (equal? (merge-sort '()) '()))
+
+(test-case "Merge sort single element"
+  (equal? (merge-sort '(42)) '(42)))
+
+(test-case "Merge sort already sorted"
+  (equal? (merge-sort '(1 2 3 4 5)) '(1 2 3 4 5)))
+
+(test-case "Merge sort reverse sorted"
+  (equal? (merge-sort '(5 4 3 2 1)) '(1 2 3 4 5)))
+
+(test-case "Merge sort random order"
+  (equal? (merge-sort '(3 1 4 1 5 9 2 6)) '(1 1 2 3 4 5 6 9)))
+
+;;; Function Composition Tests
+
+(define (compose f g)
+  (lambda (x) (f (g x))))
+
+(test-case "Function composition"
+  (begin
+    (define add-10 (lambda (x) (+ x 10)))
+    (define mul-2 (lambda (x) (* x 2)))
+    (define composed (compose mul-2 add-10))
+    (equal? (composed 5) 30)))
+
+(test-case "Triple composition"
+  (begin
+    (define f (lambda (x) (+ x 1)))
+    (define g (lambda (x) (* x 2)))
+    (define h (lambda (x) (- x 3)))
+    (define composed (compose h (compose g f)))
+    (equal? (composed 5) 9)))
+
+;;; Higher-Order Function Tests
+
+(test-case "Filter function"
+  (begin
+    (define (filter pred lst)
+      (cond
+        ((null? lst) '())
+        ((pred (car lst)) (cons (car lst) (filter pred (cdr lst))))
+        (else (filter pred (cdr lst)))))
+    (equal? (filter (lambda (x) (> x 5)) '(1 6 3 8 2 9))
+            '(6 8 9))))
+
+(test-case "Reduce function"
+  (begin
+    (define (reduce f init lst)
+      (if (null? lst)
+          init
+          (reduce f (f init (car lst)) (cdr lst))))
+    (equal? (reduce + 0 '(1 2 3 4 5)) 15)))
+
+(test-case "Zip function"
+  (begin
+    (define (zip lst1 lst2)
+      (if (or (null? lst1) (null? lst2))
+          '()
+          (cons (cons (car lst1) (car lst2))
+                (zip (cdr lst1) (cdr lst2)))))
+    (equal? (zip '(1 2 3) '(a b c))
+            '((1 . a) (2 . b) (3 . c)))))
+
+;;; Recursion and TCO Tests
+
+(test-case "Deep recursion - sum to n"
+  (begin
+    (define (sum-to n acc)
+      (if (= n 0)
+          acc
+          (sum-to (- n 1) (+ acc n))))
+    (equal? (sum-to 100 0) 5050)))
+
+(test-case "Mutual recursion - even/odd"
+  (begin
+    (define (is-even? n)
+      (if (= n 0)
+          #t
+          (is-odd? (- n 1))))
+    (define (is-odd? n)
+      (if (= n 0)
+          #f
+          (is-even? (- n 1))))
+    (and (is-even? 100)
+         (not (is-even? 99))
+         (is-odd? 99)
+         (not (is-odd? 100)))))
+
+;;; List Comprehension-like Tests
+
+(test-case "Cartesian product"
+  (begin
+    (define (cartesian lst1 lst2)
+      (if (null? lst1)
+          '()
+          (append (map (lambda (y) (cons (car lst1) y)) lst2)
+                  (cartesian (cdr lst1) lst2))))
+    (equal? (cartesian '(1 2) '(a b))
+            '((1 . a) (1 . b) (2 . a) (2 . b)))))
+
+(test-case "Flatten nested list"
+  (begin
+    (define (flatten lst)
+      (cond
+        ((null? lst) '())
+        ((pair? (car lst)) (append (flatten (car lst)) (flatten (cdr lst))))
+        (else (cons (car lst) (flatten (cdr lst))))))
+    (equal? (flatten '(1 (2 3) ((4) 5)))
+            '(1 2 3 4 5))))
+
+(report-summary)

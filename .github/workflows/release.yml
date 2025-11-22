@@ -6,6 +6,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   call_tests:
     uses: ./.github/workflows/tests.yml
@@ -71,7 +74,7 @@ jobs:
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: "0.14.1"
+          version: "0.15.2"
 
       - name: Build the binary
         run: zig build -Doptimize=ReleaseSmall -Dtarget=${{ matrix.target }}

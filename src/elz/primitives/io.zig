@@ -18,8 +18,10 @@ const interpreter = @import("../interpreter.zig");
 /// An unspecified value, or an error if writing to stdout fails.
 pub fn display(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
-    const stdout = std.io.getStdOut().writer();
-    const aw = stdout.any();
+    var buffer: [4096]u8 = undefined;
+    const stdout_file = std.fs.File.stdout();
+    var stdout_writer = stdout_file.writer(&buffer);
+    const aw = &stdout_writer.interface;
     const value = args.items[0];
 
     switch (value) {
@@ -38,8 +40,9 @@ pub fn display(_: *interpreter.Interpreter, _: *core.Environment, args: core.Val
             };
             aw.writeAll(buf[0..@as(usize, @intCast(len))]) catch return ElzError.ForeignFunctionError;
         },
-        else => writer.write(value, stdout) catch return ElzError.ForeignFunctionError,
+        else => writer.write(value, aw) catch return ElzError.ForeignFunctionError,
     }
+    aw.flush() catch return ElzError.ForeignFunctionError;
     return Value.unspecified;
 }
 
@@ -53,8 +56,12 @@ pub fn display(_: *interpreter.Interpreter, _: *core.Environment, args: core.Val
 /// An unspecified value, or an error if writing to stdout fails.
 pub fn write_proc(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
-    const stdout = std.io.getStdOut().writer();
-    writer.write(args.items[0], stdout) catch return ElzError.ForeignFunctionError;
+    var buffer: [4096]u8 = undefined;
+    const stdout_file = std.fs.File.stdout();
+    var stdout_writer = stdout_file.writer(&buffer);
+    const aw = &stdout_writer.interface;
+    writer.write(args.items[0], aw) catch return ElzError.ForeignFunctionError;
+    aw.flush() catch return ElzError.ForeignFunctionError;
     return Value.unspecified;
 }
 
@@ -68,9 +75,12 @@ pub fn write_proc(_: *interpreter.Interpreter, _: *core.Environment, args: core.
 /// An unspecified value, or an error if writing to stdout fails.
 pub fn newline(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
     if (args.items.len != 0) return ElzError.WrongArgumentCount;
-    const stdout = std.io.getStdOut().writer();
-    const aw = stdout.any();
-    aw.print("\n", .{}) catch return ElzError.ForeignFunctionError;
+    var buffer: [4096]u8 = undefined;
+    const stdout_file = std.fs.File.stdout();
+    var stdout_writer = stdout_file.writer(&buffer);
+    const aw = &stdout_writer.interface;
+    aw.writeAll("\n") catch return ElzError.ForeignFunctionError;
+    aw.flush() catch return ElzError.ForeignFunctionError;
     return Value.unspecified;
 }
 
@@ -100,7 +110,8 @@ pub fn load(interp: *interpreter.Interpreter, env: *core.Environment, args: core
     const source = file.readToEndAlloc(env.allocator, 1 * 1024 * 1024) catch return ElzError.OutOfMemory;
     defer env.allocator.free(source);
 
-    const forms = parser.readAll(source, env.allocator) catch |e| return e;
+    var forms = parser.readAll(source, env.allocator) catch |e| return e;
+    defer forms.deinit(env.allocator);
     if (forms.items.len == 0) return Value.unspecified;
 
     var last_result: Value = .unspecified;

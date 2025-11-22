@@ -26,6 +26,8 @@ pub fn apply(interp: *interpreter.Interpreter, env: *core.Environment, args: cor
     const last_arg = args.items[args.items.len - 1];
 
     var final_args = core.ValueList.init(env.allocator);
+    defer final_args.deinit();
+
     for (args.items[1 .. args.items.len - 1]) |item| {
         try final_args.append(item);
     }
@@ -46,16 +48,20 @@ pub fn apply(interp: *interpreter.Interpreter, env: *core.Environment, args: cor
 test "control primitives" {
     const allocator = std.testing.allocator;
     const testing = std.testing;
-    var interp = interpreter.Interpreter.init(allocator);
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
     defer interp.deinit();
 
     var fuel: u64 = 1000;
 
-    // Test apply
+    // Test apply with basic lambda
     const source = "(lambda (x y) (+ x y))";
-    const proc_val = try eval.eval(&interp, &try interp.read(source), interp.root_env, &fuel);
+    const forms = try @import("../parser.zig").readAll(source, allocator);
+    defer forms.deinit(allocator);
+    const proc_val = try eval.eval(&interp, &forms.items[0], interp.root_env, &fuel);
 
     var args = core.ValueList.init(allocator);
+    defer args.deinit();
+
     try args.append(proc_val);
     try args.append(core.Value{ .number = 1 });
 
@@ -65,4 +71,59 @@ test "control primitives" {
 
     const result = try apply(&interp, interp.root_env, args, &fuel);
     try testing.expect(result.number == 3);
+}
+
+test "apply with empty list" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+
+    var fuel: u64 = 1000;
+
+    // Create a lambda that takes no arguments
+    const source = "(lambda () 42)";
+    const forms = try @import("../parser.zig").readAll(source, allocator);
+    defer forms.deinit(allocator);
+    const proc_val = try eval.eval(&interp, &forms.items[0], interp.root_env, &fuel);
+
+    var args = core.ValueList.init(allocator);
+    defer args.deinit();
+
+    try args.append(proc_val);
+    try args.append(core.Value.nil);
+
+    const result = try apply(&interp, interp.root_env, args, &fuel);
+    try testing.expect(result.number == 42);
+}
+
+test "apply memory leak regression" {
+    const allocator = std.testing.allocator;
+    const testing = std.testing;
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+
+    var fuel: u64 = 10000;
+
+    // Create a simple lambda
+    const source = "(lambda (x) x)";
+    const forms = try @import("../parser.zig").readAll(source, allocator);
+    defer forms.deinit(allocator);
+    const proc_val = try eval.eval(&interp, &forms.items[0], interp.root_env, &fuel);
+
+    // Call apply many times to test for memory leaks
+    // If the defer is missing, this would accumulate memory
+    var i: usize = 0;
+    while (i < 100) : (i += 1) {
+        var args = core.ValueList.init(allocator);
+        defer args.deinit();
+
+        try args.append(proc_val);
+        const p = try allocator.create(core.Pair);
+        p.* = .{ .car = core.Value{ .number = @floatFromInt(i) }, .cdr = .nil };
+        try args.append(core.Value{ .pair = p });
+
+        const result = try apply(&interp, interp.root_env, args, &fuel);
+        try testing.expect(result.number == @as(f64, @floatFromInt(i)));
+    }
 }
