@@ -125,4 +125,12 @@ pub const Interpreter = struct {
         }
         return result;
     }
+
+    /// Cleans up resources used by the interpreter.
+    /// This method should be called when the interpreter is no longer needed.
+    /// Note: With garbage collection, most memory is automatically managed,
+    /// but this ensures proper cleanup of the module cache.
+    pub fn deinit(self: *Interpreter) void {
+        self.module_cache.deinit();
+    }
 };

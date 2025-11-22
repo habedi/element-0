@@ -26,6 +26,8 @@ pub fn apply(interp: *interpreter.Interpreter, env: *core.Environment, args: cor
     const last_arg = args.items[args.items.len - 1];
 
     var final_args = core.ValueList.init(env.allocator);
+    defer final_args.deinit();
+
     for (args.items[1 .. args.items.len - 1]) |item| {
         try final_args.append(item);
     }
