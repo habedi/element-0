@@ -185,7 +185,7 @@ Result of (zig-mul 7 6) is: 42
 ```
 
 > [!IMPORTANT]
-> Elz is implemented in Zig 0.15.2 and needs at least Zig 0.15.2 to build.
+> Elz is implemented and tested in Zig 0.15.2.
 
 -----
 
