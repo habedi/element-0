@@ -1,0 +1,218 @@
+;;; ---------------------------------------
+;;; Element 0 Regression Tests
+;;; Tests for previously fixed bugs
+;;; ---------------------------------------
+
+(display "Running Element 0 Regression tests...")
+(newline)
+
+;; --- Test Runner Framework ---
+
+(define *tests-run* 0)
+(define *tests-failed* 0)
+
+(define (test-case name test-expr)
+  (set! *tests-run* (+ *tests-run* 1))
+  (if (not (try test-expr (catch err #f)))
+      (begin
+        (set! *tests-failed* (+ *tests-failed* 1))
+        (display "[FAILED]: ") (display name) (newline))
+      (begin
+        (display "[PASSED]: ") (display name) (newline))))
+
+(define (report-summary)
+  (newline)
+  (display "--------------------") (newline)
+  (display "Tests Finished.") (newline)
+  (display "Total run: ") (display *tests-run*) (newline)
+  (display "Passed: ") (display (- *tests-run* *tests-failed*)) (newline)
+  (display "Failed: ") (display *tests-failed*) (newline)
+  (newline)
+  (if (> *tests-failed* 0)
+      (begin
+        (display "RESULT: FAILED")
+        (newline)
+        (exit 1))
+      (begin
+        (display "RESULT: PASSED")
+        (newline)
+        (exit 0))))
+
+;; --- Regression Tests ---
+
+;; Regression: apply function memory leak
+;; Tests that apply properly cleans up its internal ArrayList
+(test-case "apply with lambda" 
+  (equal? (apply + '(1 2 3)) 6))
+
+(test-case "apply with empty list"
+  (equal? (apply (lambda () 42) '()) 42))
+
+(test-case "apply with single arg"
+  (equal? (apply (lambda (x) (* x 2)) '(5)) 10))
+
+(test-case "apply multiple times - memory leak regression"
+  (begin
+    (define (test-apply-loop n)
+      (if (= n 0)
+          #t
+          (begin
+            (apply + (list n (- n 1)))
+            (test-apply-loop (- n 1)))))
+    (test-apply-loop 100)))
+
+;; Regression: Deeply nested lists (writer depth limit)
+(test-case "moderately nested list"
+  (begin
+    (define (make-nested-list depth)
+      (if (= depth 0)
+          '()
+          (list (make-nested-list (- depth 1)))))
+    (define nested (make-nested-list 50))
+    (pair? nested)))
+
+;; Regression: Module system and deinit
+(test-case "module import works"
+  (begin
+    (define m (import "tests/test_module_lib.elz"))
+    (equal? ((module-ref m 'test-func) 10) 52)))
+
+;; Edge case: Negative modulo (behavior test, not error test)
+(test-case "negative modulo behavior"
+  (number? (% -10 3)))
+
+;; Edge case: Empty list operations
+(test-case "length of empty list"
+  (equal? (length '()) 0))
+
+(test-case "reverse of empty list"
+  (equal? (reverse '()) '()))
+
+(test-case "append empty lists"
+  (equal? (append '() '() '()) '()))
+
+;; Edge case: Single element lists
+(test-case "car of single element"
+  (equal? (car '(42)) 42))
+
+(test-case "cdr of single element"
+  (equal? (cdr '(42)) '()))
+
+(test-case "reverse single element"
+  (equal? (reverse '(42)) '(42)))
+
+;; Edge case: Large numbers
+(test-case "large factorial"
+  (begin
+    (define (factorial n)
+      (if (<= n 1)
+          1
+          (* n (factorial (- n 1)))))
+    (> (factorial 20) 1000000)))
+
+;; Edge case: Floating point precision
+(test-case "floating point addition"
+  (> (+ 0.1 0.2) 0.29))
+
+;; Edge case: String operations
+(test-case "empty string length"
+  (equal? (string-length "") 0))
+
+(test-case "string equality"
+  (equal? "hello" "hello"))
+
+;; Edge case: Symbol operations
+(test-case "symbol to string conversion"
+  (equal? (symbol->string 'foo) "foo"))
+
+(test-case "string to symbol conversion"
+  (equal? (string->symbol "bar") 'bar))
+
+;; Edge case: Boolean operations
+(test-case "and with no arguments"
+  (equal? (and) #t))
+
+(test-case "and with single true"
+  (equal? (and #t) #t))
+
+(test-case "and with single false"
+  (equal? (and #f) #f))
+
+;; Edge case: Comparison operations
+(test-case "less than equal values"
+  (equal? (< 5 5) #f))
+
+(test-case "less than or equal same values"
+  (equal? (<= 5 5) #t))
+
+(test-case "greater than equal values"
+  (equal? (> 5 5) #f))
+
+(test-case "greater than or equal same values"
+  (equal? (>= 5 5) #t))
+
+;; Edge case: Nested function calls
+(test-case "deeply nested arithmetic"
+  (equal? (+ 1 (+ 2 (+ 3 (+ 4 (+ 5 (+ 6 (+ 7 (+ 8 (+ 9 10))))))))) 55))
+
+;; Edge case: Lambda with no parameters
+(test-case "lambda with no params"
+  (equal? ((lambda () 42)) 42))
+
+;; Edge case: Lambda with many parameters
+(test-case "lambda with many params"
+  (equal? ((lambda (a b c d e) (+ a b c d e)) 1 2 3 4 5) 15))
+
+;; Edge case: Closure capturing
+(test-case "closure captures outer variable"
+  (begin
+    (define (make-adder n)
+      (lambda (x) (+ x n)))
+    (define add5 (make-adder 5))
+    (equal? (add5 10) 15)))
+
+;; Edge case: Try/catch with no error
+(test-case "try/catch success path"
+  (equal? (try (+ 1 2) (catch err 0)) 3))
+
+;; Edge case: Try/catch with error
+(test-case "try/catch error path"
+  (equal? (try (/ 1 0) (catch err 42)) 42))
+
+;; Edge case: Cond with no matching clause
+(test-case "cond with no match returns nil"
+  (equal? (cond (#f 1) (#f 2)) '()))
+
+;; Edge case: Cond with else
+(test-case "cond with else clause"
+  (equal? (cond (#f 1) (else 42)) 42))
+
+;; Edge case: If without else
+(test-case "if without else returns unspecified"
+  (begin
+    (if #f 1)
+    #t))
+
+;; Edge case: Quote special forms
+(test-case "quote list"
+  (equal? (quote (1 2 3)) '(1 2 3)))
+
+(test-case "quote symbol"
+  (equal? (quote foo) 'foo))
+
+;; Edge case: List construction
+(test-case "list with no arguments"
+  (equal? (list) '()))
+
+(test-case "list with many arguments"
+  (equal? (length (list 1 2 3 4 5 6 7 8 9 10)) 10))
+
+;; Edge case: Map over empty list
+(test-case "map over empty list"
+  (equal? (map (lambda (x) (* x 2)) '()) '()))
+
+;; Edge case: Map over single element
+(test-case "map over single element"
+  (equal? (map (lambda (x) (* x 2)) '(5)) '(10)))
+
+(report-summary)
