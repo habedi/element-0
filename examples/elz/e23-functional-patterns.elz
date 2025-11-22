@@ -1,0 +1,108 @@
+;;; Functional Programming Patterns
+;;; Demonstrates functors, monads, and composition
+
+(display "Functional Programming Patterns")
+(newline)
+
+;; Function Composition
+(define (compose f g)
+  (lambda (x) (f (g x))))
+
+(define (compose3 f g h)
+  "Compose three functions"
+  (lambda (x) (f (g (h x)))))
+
+
+;; Functor-like map for lists
+(define (fmap f lst)
+  "Map function over a list (functor)"
+  (map f lst))
+
+;; Maybe monad simulation
+(define (just value)
+  (cons 'just value))
+
+(define (nothing)
+  'nothing)
+
+(define (is-just? maybe)
+  (and (pair? maybe) (equal? (car maybe) 'just)))
+
+(define (from-just maybe)
+  (if (is-just? maybe)
+      (cdr maybe)
+      (error "Cannot extract value from Nothing")))
+
+(define (maybe-bind maybe f)
+  "Monadic bind for Maybe"
+  (if (is-just? maybe)
+      (f (from-just maybe))
+      (nothing)))
+
+(define (maybe-map f maybe)
+  "Map function over Maybe value"
+  (if (is-just? maybe)
+      (just (f (from-just maybe)))
+      (nothing)))
+
+;; Example: Safe division
+(define (safe-div a b)
+  (if (= b 0)
+      (nothing)
+      (just (/ a b))))
+
+;; Example: Compose arithmetic functions
+(define add-10 (lambda (x) (+ x 10)))
+(define mul-2 (lambda (x) (* x 2)))
+(define square (lambda (x) (* x x)))
+
+(define transform (compose square (compose mul-2 add-10)))
+
+(display "Function composition:")
+(newline)
+(display "  Input: 5")
+(newline)
+(display "  add-10 -> mul-2 -> square: ")
+(display (transform 5))
+(newline)
+
+;; Three-function composition
+(define pipeline (compose3 square mul-2 add-10))
+(display "  Same with compose3: ")
+(display (pipeline 5))
+(newline)
+
+;; Maybe monad examples
+(newline)
+(display "Maybe monad (safe division):")
+(newline)
+
+(define result1 (safe-div 10 2))
+(display "  10 / 2 = ")
+(display (if (is-just? result1) (from-just result1) "Nothing"))
+(newline)
+
+(define result2 (safe-div 10 0))
+(display "  10 / 0 = ")
+(display (if (is-just? result2) (from-just result2) "Nothing"))
+(newline)
+
+;; Chain operations with maybe-bind
+(define chained
+  (maybe-bind (safe-div 100 4)
+              (lambda (x)
+                (maybe-bind (safe-div x 2)
+                            (lambda (y)
+                              (just (+ y 10)))))))
+
+(display "  Chained: 100 / 4 / 2 + 10 = ")
+(display (if (is-just? chained) (from-just chained) "Nothing"))
+(newline)
+
+;; Functor map over list
+(newline)
+(display "Functor map:")
+(newline)
+(display "  Square [1,2,3,4,5]: ")
+(display (fmap square '(1 2 3 4 5)))
+(newline)

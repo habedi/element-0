@@ -1,0 +1,78 @@
+;;; Simple Calculator with Expression Parser
+;;; Demonstrates recursive descent parsing
+
+(display "Calculator Example")
+(newline)
+
+;; Expression format: (op arg1 arg2)
+;; Example: (+ 2 (* 3 4)) => 2 + (3 * 4) = 14
+
+(define (calc expr)
+  "Evaluate an arithmetic expression"
+  (cond
+    ((number? expr) expr)
+    ((not (pair? expr)) (error "Invalid expression"))
+    (else
+     (let ((op (car expr))
+           (args (cdr expr)))
+       (cond
+         ((equal? op '+) (apply + (map calc args)))
+         ((equal? op '-) (apply - (map calc args)))
+         ((equal? op '*) (apply * (map calc args)))
+         ((equal? op '/) (apply / (map calc args)))
+         ((equal? op 'sqrt) (sqrt (calc (car args))))
+         ((equal? op 'square) (let ((x (calc (car args)))) (* x x)))
+         ((equal? op 'abs) (abs (calc (car args))))
+         ((equal? op 'max) (apply max (map calc args)))
+         ((equal? op 'min) (apply min (map calc args)))
+         (else (error "Unknown operator")))))))
+
+;; Test expressions
+(define expr1 '(+ 2 3))
+(define expr2 '(* 4 5))
+(define expr3 '(+ (* 2 3) (/ 8 2)))
+(define expr4 '(sqrt (+ (square 3) (square 4))))
+(define expr5 '(max 10 20 (+ 5 10) (* 2 8)))
+
+(display "Expression: ")
+(display expr1)
+(display " = ")
+(display (calc expr1))
+(newline)
+
+(display "Expression: ")
+(display expr2)
+(display " = ")
+(display (calc expr2))
+(newline)
+
+(display "Expression: ")
+(display expr3)
+(display " = ")
+(display (calc expr3))
+(newline)
+
+(display "Expression: ")
+(display expr4)
+(display " = ")
+(display (calc expr4))
+(newline)
+
+(display "Expression: ")
+(display expr5)
+(display " = ")
+(display (calc expr5))
+(newline)
+
+;; Complex nested expression
+(define complex-expr
+  '(+ (* 2 (- 10 5))
+      (/ (+ 8 4) 3)
+      (sqrt 16)))
+
+(display "Complex: ")
+(display complex-expr)
+(newline)
+(display "Result: ")
+(display (calc complex-expr))
+(newline)

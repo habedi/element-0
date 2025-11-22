@@ -1,0 +1,82 @@
+;;; Advanced Sorting Algorithms
+;;; Demonstrates merge sort and insertion sort
+
+(display "Sorting Algorithms Example")
+(newline)
+
+;; Helper for integer division
+(define (floor-div a b)
+  (- (/ a b) (% (/ a b) 1)))
+
+;; Merge Sort Implementation
+(define (merge-sort lst)
+  (if (<= (length lst) 1)
+      lst
+      (let ((mid (floor-div (length lst) 2)))
+        (merge (merge-sort (take lst mid))
+               (merge-sort (drop lst mid))))))
+
+(define (merge left right)
+  (cond
+    ((null? left) right)
+    ((null? right) left)
+    ((<= (car left) (car right))
+     (cons (car left) (merge (cdr left) right)))
+    (else
+     (cons (car right) (merge left (cdr right))))))
+
+(define (take lst n)
+  (if (or (<= n 0) (null? lst))
+      '()
+      (cons (car lst) (take (cdr lst) (- n 1)))))
+
+(define (drop lst n)
+  (if (or (<= n 0) (null? lst))
+      lst
+      (drop (cdr lst) (- n 1))))
+
+;; Insertion Sort Implementation
+(define (insertion-sort lst)
+  (if (null? lst)
+      '()
+      (insert (car lst) (insertion-sort (cdr lst)))))
+
+(define (insert x sorted-lst)
+  (cond
+    ((null? sorted-lst) (list x))
+    ((<= x (car sorted-lst)) (cons x sorted-lst))
+    (else (cons (car sorted-lst) (insert x (cdr sorted-lst))))))
+
+;; Test data
+(define unsorted '(64 34 25 12 22 11 90 88 45 50 23 67))
+
+(display "Original list: ")
+(display unsorted)
+(newline)
+
+(display "Merge sorted: ")
+(display (merge-sort unsorted))
+(newline)
+
+(display "Insertion sorted: ")
+(display (insertion-sort unsorted))
+(newline)
+
+;; Benchmark comparison (rough)
+(define (time-sort sort-fn lst iterations)
+  (define (loop n)
+    (if (= n 0)
+        #t
+        (begin
+          (sort-fn lst)
+          (loop (- n 1)))))
+  (loop iterations))
+
+(display "Running 100 iterations of each sort...")
+(newline)
+(time-sort merge-sort unsorted 100)
+(display "Merge sort complete")
+(newline)
+(time-sort insertion-sort unsorted 100)
+(display "Insertion sort complete")
+(newline)

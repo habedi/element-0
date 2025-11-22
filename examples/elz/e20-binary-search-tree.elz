@@ -1,0 +1,87 @@
+;;; Binary Search Tree Implementation
+;;; Demonstrates advanced data structures and recursion
+
+(display "Binary Search Tree Example")
+(newline)
+
+;; Node structure: (value left right)
+;; Empty tree is represented as '()
+
+(define (make-node value left right)
+  (list value left right))
+
+(define (node-value node)
+  (car node))
+
+(define (node-left node)
+  (car (cdr node)))
+
+(define (node-right node)
+  (car (cdr (cdr node))))
+
+(define (bst-insert tree value)
+  (if (null? tree)
+      (make-node value '() '())
+      (if (< value (node-value tree))
+          (make-node (node-value tree)
+                     (bst-insert (node-left tree) value)
+                     (node-right tree))
+          (make-node (node-value tree)
+                     (node-left tree)
+                     (bst-insert (node-right tree) value)))))
+
+(define (bst-contains? tree value)
+  (if (null? tree)
+      #f
+      (if (= value (node-value tree))
+          #t
+          (if (< value (node-value tree))
+              (bst-contains? (node-left tree) value)
+              (bst-contains? (node-right tree) value)))))
+
+(define (bst-min tree)
+  (if (null? (node-left tree))
+      (node-value tree)
+      (bst-min (node-left tree))))
+
+(define (bst-max tree)
+  (if (null? (node-right tree))
+      (node-value tree)
+      (bst-max (node-right tree))))
+
+(define (bst-inorder tree)
+  (if (null? tree)
+      '()
+      (append (bst-inorder (node-left tree))
+              (list (node-value tree))
+              (bst-inorder (node-right tree)))))
+
+;; Build a sample tree
+(define tree '())
+(set! tree (bst-insert tree 50))
+(set! tree (bst-insert tree 30))
+(set! tree (bst-insert tree 70))
+(set! tree (bst-insert tree 20))
+(set! tree (bst-insert tree 40))
+(set! tree (bst-insert tree 60))
+(set! tree (bst-insert tree 80))
+
+(display "Tree (inorder): ")
+(display (bst-inorder tree))
+(newline)
+
+(display "Contains 40? ")
+(display (bst-contains? tree 40))
+(newline)
+
+(display "Contains 100? ")
+(display (bst-contains? tree 100))
+(newline)
+
+(display "Min value: ")
+(display (bst-min tree))
+(newline)
+
+(display "Max value: ")
+(display (bst-max tree))
+(newline)
