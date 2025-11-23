@@ -124,6 +124,9 @@ pub fn build(b: *std.Build) void {
     const docs_step = b.step("docs", "Generate API documentation");
     const doc_install_path = "docs/api";
 
+    // Create docs directory if it doesn't exist (portable across all platforms)
+    fs.cwd().makePath("docs") catch {};
+
     const gen_docs_cmd = b.addSystemCommand(&[_][]const u8{
         b.graph.zig_exe,
         "build-lib",

@@ -86,6 +86,7 @@ It outlines the features to be implemented and their current status.
 
 * [x] `write`
 * [x] `display`
+* [x] `newline`
 * [x] `load`
 * [ ] `read`
 * [ ] `open-input-file`, `close-input-port`
@@ -94,7 +95,7 @@ It outlines the features to be implemented and their current status.
 
 * [x] **Math Library**: More common mathematical functions (like trigonometric and logarithmic functions).
 * [x] **List Utilities**: `filter`, `fold-left`, `fold-right`, and other common list processing functions.
-* [ ] **String Utilities**: `substring`, `string-append`, `string-split`, etc.
+* [x] **String Utilities**: `string-append` implemented. Still needed: `substring`, `string-split`, etc.
 * [ ] **Regular Expressions**: A library for advanced text pattern matching.
 * [ ] **OS and Filesystem**: Procedures for file I/O, directory manipulation, and environment variables.
 * [ ] **Advanced I/O**: A `format` procedure and a more comprehensive port system.
