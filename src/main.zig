@@ -2,9 +2,10 @@ const std = @import("std");
 const elz = @import("elz");
 const chilli = @import("chilli");
 
-const linenoise = @cImport({
+const builtin = @import("builtin");
+const linenoise = if (builtin.os.tag != .windows) @cImport({
     @cInclude("linenoise.h");
-});
+}) else struct {};
 
 fn displayValue(_: *elz.Interpreter, value: elz.Value, writer: anytype) !void {
     switch (value) {
@@ -62,89 +63,127 @@ fn exec(interpreter: *elz.Interpreter, source: []const u8) !void {
 }
 
 fn repl(interpreter: *elz.Interpreter) !void {
-    const history_path = "history.txt";
-    _ = linenoise.linenoiseHistoryLoad(history_path);
-    defer {
-        _ = linenoise.linenoiseHistorySave(history_path);
-    }
-
-    while (true) {
-        const line = linenoise.linenoise("> ");
-        if (line == null) {
-            return;
-        }
-        defer linenoise.linenoiseFree(line);
-
-        const line_slice = std.mem.sliceTo(line, 0);
-
-        if (line_slice.len == 0) {
-            continue;
+    if (builtin.os.tag != .windows) {
+        const history_path = "history.txt";
+        _ = linenoise.linenoiseHistoryLoad(history_path);
+        defer {
+            _ = linenoise.linenoiseHistorySave(history_path);
         }
 
-        if (std.mem.eql(u8, line_slice, ".exit")) {
-            return;
-        }
+        while (true) {
+            const line = linenoise.linenoise("> ");
+            if (line == null) {
+                return;
+            }
+            defer linenoise.linenoiseFree(line);
 
-        _ = linenoise.linenoiseHistoryAdd(line);
+            const line_slice = std.mem.sliceTo(line, 0);
 
-        eval_line: {
-            var forms = elz.parser.readAll(line_slice, interpreter.allocator) catch |err| {
-                var buffer: [4096]u8 = undefined;
-                const stdout_file = std.fs.File.stdout();
-                var stdout_writer = stdout_file.writer(&buffer);
-                const stdout = &stdout_writer.interface;
-                try stdout.print("Parse Error: {s}\n", .{@errorName(err)});
-                try stdout.flush();
-                break :eval_line;
-            };
-            defer forms.deinit(interpreter.allocator);
+            if (line_slice.len == 0) {
+                continue;
+            }
 
-            if (forms.items.len == 0) break :eval_line;
+            if (std.mem.eql(u8, line_slice, ".exit")) {
+                return;
+            }
 
-            var last_result: elz.Value = .nil;
-            for (forms.items) |form| {
-                var fuel: u64 = 1_000_000;
-                last_result = elz.eval.eval(interpreter, &form, interpreter.root_env, &fuel) catch |err| {
+            _ = linenoise.linenoiseHistoryAdd(line);
+
+            eval_line: {
+                var forms = elz.parser.readAll(line_slice, interpreter.allocator) catch |err| {
                     var buffer: [4096]u8 = undefined;
                     const stdout_file = std.fs.File.stdout();
                     var stdout_writer = stdout_file.writer(&buffer);
                     const stdout = &stdout_writer.interface;
-                    if (interpreter.last_error_message) |msg| {
-                        try stdout.print("Error: {s}\n", .{msg});
-                    } else {
-                        try stdout.print("Error: {s}\n", .{@errorName(err)});
-                    }
+                    try stdout.print("Parse Error: {s}\n", .{@errorName(err)});
                     try stdout.flush();
                     break :eval_line;
                 };
-            }
-            var buffer: [4096]u8 = undefined;
-            const stdout_file = std.fs.File.stdout();
-            var stdout_writer = stdout_file.writer(&buffer);
-            const stdout = &stdout_writer.interface;
-            if (last_result != .unspecified) {
-                try displayValue(interpreter, last_result, stdout);
-                try stdout.flush();
+                defer forms.deinit(interpreter.allocator);
+
+                if (forms.items.len == 0) break :eval_line;
+
+                var last_result: elz.Value = .nil;
+                for (forms.items) |form| {
+                    var fuel: u64 = 1_000_000;
+                    last_result = elz.eval.eval(interpreter, &form, interpreter.root_env, &fuel) catch |err| {
+                        var buffer: [4096]u8 = undefined;
+                        const stdout_file = std.fs.File.stdout();
+                        var stdout_writer = stdout_file.writer(&buffer);
+                        const stdout = &stdout_writer.interface;
+                        if (interpreter.last_error_message) |msg| {
+                            try stdout.print("Error: {s}\n", .{msg});
+                        } else {
+                            try stdout.print("Error: {s}\n", .{@errorName(err)});
+                        }
+                        try stdout.flush();
+                        break :eval_line;
+                    };
+                }
+                var buffer: [4096]u8 = undefined;
+                const stdout_file = std.fs.File.stdout();
+                var stdout_writer = stdout_file.writer(&buffer);
+                const stdout = &stdout_writer.interface;
+                if (last_result != .unspecified) {
+                    try displayValue(interpreter, last_result, stdout);
+                    try stdout.flush();
+                }
             }
         }
+    } else {
+        // Windows: REPL not supported, use file execution mode with -f flag
+        var buffer: [4096]u8 = undefined;
+        const stdout_file = std.fs.File.stdout();
+        var stdout_writer = stdout_file.writer(&buffer);
+        const stdout = &stdout_writer.interface;
+        try stdout.writeAll("REPL mode is not available on Windows.\n");
+        try stdout.writeAll("Please use file execution mode: elz-repl -f <filepath>\n");
+        try stdout.flush();
+        return;
     }
 }
 
 fn rootExec(ctx: chilli.CommandContext) !void {
     const interpreter = ctx.getContextData(elz.Interpreter).?;
 
+    // Check verbose flag
+    const verbose = if (ctx.command.getFlagValue("verbose")) |v| v.Bool else false;
+
     if (ctx.command.getFlagValue("file")) |flag_value| {
         if (flag_value.String.len > 0) {
             const filename = flag_value.String;
-            const file = try std.fs.cwd().openFile(filename, .{});
+
+            if (verbose) {
+                std.debug.print("[VERBOSE] Opening file: {s}\n", .{filename});
+            }
+
+            const file = std.fs.cwd().openFile(filename, .{}) catch |err| {
+                std.debug.print("Error: Failed to open file '{s}': {s}\n", .{ filename, @errorName(err) });
+                return err;
+            };
             defer file.close();
 
-            const source = try file.readToEndAlloc(interpreter.allocator, 1024 * 1024);
+            if (verbose) {
+                std.debug.print("[VERBOSE] Reading file contents...\n", .{});
+            }
+
+            const source = file.readToEndAlloc(interpreter.allocator, 1024 * 1024) catch |err| {
+                std.debug.print("Error: Failed to read file '{s}': {s}\n", .{ filename, @errorName(err) });
+                return err;
+            };
             defer interpreter.allocator.free(source);
+
+            if (verbose) {
+                std.debug.print("[VERBOSE] Executing {d} bytes of source code...\n", .{source.len});
+            }
 
             try exec(interpreter, source);
             return;
         }
+    }
+
+    if (verbose) {
+        std.debug.print("[VERBOSE] Starting REPL mode...\n", .{});
     }
 
     try repl(interpreter);
@@ -163,8 +202,8 @@ pub fn main() anyerror!void {
 
     var root_cmd = try chilli.Command.init(gpa.allocator(), .{
         .name = "elz",
-        .description = "An Element 0 dialect implemented in Zig λ",
-        .version = "0.1.0-alpha.2",
+        .description = "Element 0 is a Lisp dialect implemented in Zig",
+        .version = "0.1.0-alpha.4",
         .exec = rootExec,
     });
     defer root_cmd.deinit();
@@ -175,6 +214,14 @@ pub fn main() anyerror!void {
         .description = "The Element 0 source file to execute",
         .type = .String,
         .default_value = .{ .String = "" },
+    });
+
+    try root_cmd.addFlag(.{
+        .name = "verbose",
+        .shortcut = 'v',
+        .description = "Enable verbose output for debugging",
+        .type = .Bool,
+        .default_value = .{ .Bool = false },
     });
 
     try root_cmd.run(interpreter_ptr);

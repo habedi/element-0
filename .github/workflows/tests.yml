@@ -35,4 +35,6 @@ jobs:
           sudo apt-get install -y make
 
       - name: Run the Tests
-        run: make test
+        run: |
+          make test
+          make test-elz

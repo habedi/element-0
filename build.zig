@@ -41,9 +41,14 @@ pub fn build(b: *std.Build) void {
         // Add platform-specific source files for threading
         switch (target.query.os_tag orelse .linux) {
             .windows => {
+                cflags.append(b.allocator, "-D_WIN32") catch unreachable;
                 src_files.appendSlice(b.allocator, &.{ "win32_threads.c", "pthread_support.c" }) catch unreachable;
+                gc.linkSystemLibrary("user32");
             },
             .macos => {
+                cflags.append(b.allocator, "-D_DARWIN_C_SOURCE") catch unreachable;
+                cflags.append(b.allocator, "-DMISSING_MACH_O_GETSECT_H") catch unreachable;
+                cflags.append(b.allocator, "-DNO_MPROTECT_VDB") catch unreachable;
                 src_files.appendSlice(b.allocator, &.{ "darwin_stop_world.c", "pthread_support.c", "pthread_start.c" }) catch unreachable;
             },
             else => { // Assume other POSIX-like systems

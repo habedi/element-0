@@ -42,7 +42,7 @@
 
 ;; Regression: apply function memory leak
 ;; Tests that apply properly cleans up its internal ArrayList
-(test-case "apply with lambda" 
+(test-case "apply with lambda"
   (equal? (apply + '(1 2 3)) 6))
 
 (test-case "apply with empty list"
