@@ -146,18 +146,44 @@ fn repl(interpreter: *elz.Interpreter) !void {
 fn rootExec(ctx: chilli.CommandContext) !void {
     const interpreter = ctx.getContextData(elz.Interpreter).?;
 
+    // Check verbose flag
+    const verbose = if (ctx.command.getFlagValue("verbose")) |v| v.Bool else false;
+
     if (ctx.command.getFlagValue("file")) |flag_value| {
         if (flag_value.String.len > 0) {
             const filename = flag_value.String;
-            const file = try std.fs.cwd().openFile(filename, .{});
+
+            if (verbose) {
+                std.debug.print("[VERBOSE] Opening file: {s}\n", .{filename});
+            }
+
+            const file = std.fs.cwd().openFile(filename, .{}) catch |err| {
+                std.debug.print("Error: Failed to open file '{s}': {s}\n", .{ filename, @errorName(err) });
+                return err;
+            };
             defer file.close();
 
-            const source = try file.readToEndAlloc(interpreter.allocator, 1024 * 1024);
+            if (verbose) {
+                std.debug.print("[VERBOSE] Reading file contents...\n", .{});
+            }
+
+            const source = file.readToEndAlloc(interpreter.allocator, 1024 * 1024) catch |err| {
+                std.debug.print("Error: Failed to read file '{s}': {s}\n", .{ filename, @errorName(err) });
+                return err;
+            };
             defer interpreter.allocator.free(source);
+
+            if (verbose) {
+                std.debug.print("[VERBOSE] Executing {d} bytes of source code...\n", .{source.len});
+            }
 
             try exec(interpreter, source);
             return;
         }
+    }
+
+    if (verbose) {
+        std.debug.print("[VERBOSE] Starting REPL mode...\n", .{});
     }
 
     try repl(interpreter);
@@ -176,7 +202,7 @@ pub fn main() anyerror!void {
 
     var root_cmd = try chilli.Command.init(gpa.allocator(), .{
         .name = "elz",
-        .description = "An Element 0 dialect implemented in Zig λ",
+        .description = "Element 0 is a Lisp dialect implemented in Zig",
         .version = "0.1.0-alpha.4",
         .exec = rootExec,
     });
@@ -188,6 +214,14 @@ pub fn main() anyerror!void {
         .description = "The Element 0 source file to execute",
         .type = .String,
         .default_value = .{ .String = "" },
+    });
+
+    try root_cmd.addFlag(.{
+        .name = "verbose",
+        .shortcut = 'v',
+        .description = "Enable verbose output for debugging",
+        .type = .Bool,
+        .default_value = .{ .Bool = false },
     });
 
     try root_cmd.run(interpreter_ptr);
