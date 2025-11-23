@@ -105,7 +105,7 @@ pub fn build(b: *std.Build) void {
         .root_module = repl_module,
     });
 
-    // --- Linenoise dependency (POSIX only) ---
+    // --- Linenoise dependency (for POSIX only) ---
     if (target.query.os_tag orelse .linux != .windows) {
         const linenoise_dep = b.dependency("linenoise", .{});
         repl_exe.addIncludePath(linenoise_dep.path(""));
@@ -128,7 +128,7 @@ pub fn build(b: *std.Build) void {
     const docs_step = b.step("docs", "Generate API documentation");
     const doc_install_path = "docs/api";
 
-    // Create docs directory if it doesn't exist (portable across all platforms)
+    // Create docs directory if it doesn't exist
     fs.cwd().makePath("docs") catch {};
 
     const gen_docs_cmd = b.addSystemCommand(&[_][]const u8{
