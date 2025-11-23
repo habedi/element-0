@@ -137,7 +137,7 @@ fn repl(interpreter: *elz.Interpreter) !void {
         var stdout_writer = stdout_file.writer(&buffer);
         const stdout = &stdout_writer.interface;
         try stdout.writeAll("REPL mode is not available on Windows.\n");
-        try stdout.writeAll("Please use file execution mode: elz-repl -f <filename>\n");
+        try stdout.writeAll("Please use file execution mode: elz-repl -f <filepath>\n");
         try stdout.flush();
         return;
     }
@@ -177,7 +177,7 @@ pub fn main() anyerror!void {
     var root_cmd = try chilli.Command.init(gpa.allocator(), .{
         .name = "elz",
         .description = "An Element 0 dialect implemented in Zig λ",
-        .version = "0.1.0-alpha.2",
+        .version = "0.1.0-alpha.4",
         .exec = rootExec,
     });
     defer root_cmd.deinit();
