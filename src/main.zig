@@ -203,7 +203,7 @@ pub fn main() anyerror!void {
     var root_cmd = try chilli.Command.init(gpa.allocator(), .{
         .name = "elz",
         .description = "Element 0 is a Lisp dialect implemented in Zig",
-        .version = "0.1.0-alpha.4",
+        .version = "0.1.0-alpha.5",
         .exec = rootExec,
     });
     defer root_cmd.deinit();
