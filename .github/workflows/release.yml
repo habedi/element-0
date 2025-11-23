@@ -26,14 +26,35 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create temporary tag for draft
+        if: github.ref_type != 'tag'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TAG_NAME="draft-${{ github.ref_name }}-$(date +%s)"
+          echo "DRAFT_TAG=$TAG_NAME" >> $GITHUB_ENV
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+
+      - name: Set release tag name
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_TAG=${{ env.DRAFT_TAG }}" >> $GITHUB_ENV
+          fi
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          release_name: Release ${{ env.RELEASE_TAG }}
           draft: ${{ github.ref_type != 'tag' }}
           prerelease: true
 
@@ -50,6 +71,10 @@ jobs:
             target: x86_64-linux-gnu
             artifact_name: elz-repl-linux-x86_64.tar.gz
             asset_content_type: application/gzip
+          - os: ubuntu-latest
+            target: aarch64-linux-gnu
+            artifact_name: elz-repl-linux-aarch64.tar.gz
+            asset_content_type: application/gzip
           - os: macos-latest
             target: aarch64-macos # Apple Silicon (ARM64)
             artifact_name: elz-repl-macos-aarch64.tar.gz
@@ -61,6 +86,10 @@ jobs:
           - os: windows-latest
             target: x86_64-windows-msvc
             artifact_name: elz-repl-windows-x86_64.zip
+            asset_content_type: application/zip
+          - os: windows-latest
+            target: aarch64-windows-msvc
+            artifact_name: elz-repl-windows-aarch64.zip
             asset_content_type: application/zip
 
     steps:
