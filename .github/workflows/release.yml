@@ -32,10 +32,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: ${{ github.ref_type != 'tag' }}
+          prerelease: true
 
   build-and-upload:
     name: Build and Upload
@@ -51,11 +51,11 @@ jobs:
             artifact_name: elz-repl-linux-x86_64.tar.gz
             asset_content_type: application/gzip
           - os: macos-latest
-            target: aarch64-macos-none # Apple Silicon (ARM64)
+            target: aarch64-macos # Apple Silicon (ARM64)
             artifact_name: elz-repl-macos-aarch64.tar.gz
             asset_content_type: application/gzip
           - os: macos-latest
-            target: x86_64-macos-none # Intel
+            target: x86_64-macos # Intel
             artifact_name: elz-repl-macos-x86_64.tar.gz
             asset_content_type: application/gzip
           - os: windows-latest
