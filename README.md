@@ -224,4 +224,4 @@ Element 0 is licensed under the Apache License, Version 2.0 (see [LICENSE](LICEN
 * The logo is made by [Conrad Barski, M.D.](https://www.lisperati.com/logo.html) with a few changes.
 * This project uses [linenoise](https://github.com/antirez/linenoise) and [bdwgc](https://github.com/bdwgc/bdwgc) C
   libraries.
-* This project uses the [Chilli](https://github.com/habedi/chilli) CLI framework.
+* This project uses the [Chilli](https://github.com/CogitatorTech/chilli) CLI framework.
