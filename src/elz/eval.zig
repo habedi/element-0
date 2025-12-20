@@ -630,3 +630,192 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
         }
     }
 }
+
+test "eval simple values" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    // Numbers are self-evaluating
+    const result = try interp.evalString("42", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 42), result.number);
+}
+
+test "eval quote" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    // Quote returns the unevaluated form
+    const result = try interp.evalString("(quote (1 2 3))", &fuel);
+    try std.testing.expect(result == .pair);
+}
+
+test "eval if true branch" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    const result = try interp.evalString("(if #t 1 2)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 1), result.number);
+}
+
+test "eval if false branch" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    const result = try interp.evalString("(if #f 1 2)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 2), result.number);
+}
+
+test "eval nested if - regression for TCO bug" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    const result = try interp.evalString("(if #t (if #t (if #t 42 0) 0) 0)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 42), result.number);
+}
+
+test "eval cond" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    const result = try interp.evalString("(cond (#f 1) (#t 2) (else 3))", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 2), result.number);
+}
+
+test "eval and" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    // and returns last value if all truthy
+    const result = try interp.evalString("(and 1 2 3)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 3), result.number);
+}
+
+test "eval or" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    // or returns first truthy value
+    const result = try interp.evalString("(or #f 5)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 5), result.number);
+}
+
+test "eval define and lookup" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    _ = try interp.evalString("(define x 100)", &fuel);
+    const result = try interp.evalString("x", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 100), result.number);
+}
+
+test "eval set!" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    _ = try interp.evalString("(define y 5)", &fuel);
+    _ = try interp.evalString("(set! y 10)", &fuel);
+    const result = try interp.evalString("y", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 10), result.number);
+}
+
+test "eval lambda" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    const result = try interp.evalString("((lambda (x) (* x 2)) 7)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 14), result.number);
+}
+
+test "eval begin" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    const result = try interp.evalString("(begin 1 2 3)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 3), result.number);
+}
+
+test "eval let" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    const result = try interp.evalString("(let ((x 5) (y 10)) (+ x y))", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 15), result.number);
+}
+
+test "eval let*" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    // let* allows sequential binding
+    const result = try interp.evalString("(let* ((x 5) (y x)) (+ x y))", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 10), result.number);
+}
+
+test "eval letrec for recursion" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 10000;
+
+    const result = try interp.evalString(
+        "(letrec ((factorial (lambda (n) (if (<= n 1) 1 (* n (factorial (- n 1))))))) (factorial 5))",
+        &fuel,
+    );
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 120), result.number);
+}
+
+test "eval try/catch success" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    const result = try interp.evalString("(try (+ 1 2) (catch err 0))", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 3), result.number);
+}
+
+test "eval try/catch error" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1000;
+
+    const result = try interp.evalString("(try (/ 1 0) (catch err 42))", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 42), result.number);
+}
+
+test "eval fuel exhaustion" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+    var fuel: u64 = 1; // Very limited fuel
+
+    const result = interp.evalString("(+ 1 (+ 2 3))", &fuel);
+    try std.testing.expectError(ElzError.ExecutionBudgetExceeded, result);
+}

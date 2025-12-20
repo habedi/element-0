@@ -215,3 +215,111 @@ fn valueFromNative(allocator: std.mem.Allocator, value: anytype) core.Value {
         else => @compileError("Unsupported return type for FFI: " ++ @typeName(T)),
     };
 }
+
+test "Caster float from number" {
+    const result = try Caster(f32).cast(core.Value{ .number = 3.14 });
+    try std.testing.expectApproxEqAbs(@as(f32, 3.14), result, 0.001);
+}
+
+test "Caster float from non-number" {
+    const result = Caster(f32).cast(core.Value{ .boolean = true });
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "Caster int from valid number" {
+    const result = try Caster(i32).cast(core.Value{ .number = 42 });
+    try std.testing.expectEqual(@as(i32, 42), result);
+}
+
+test "Caster int from negative number" {
+    const result = try Caster(i32).cast(core.Value{ .number = -100 });
+    try std.testing.expectEqual(@as(i32, -100), result);
+}
+
+test "Caster int from fractional number" {
+    const result = Caster(i32).cast(core.Value{ .number = 3.14 });
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "Caster int from NaN" {
+    const result = Caster(i32).cast(core.Value{ .number = std.math.nan(f64) });
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "Caster int from Infinity" {
+    const result = Caster(i32).cast(core.Value{ .number = std.math.inf(f64) });
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "Caster u8 out of range" {
+    // 256 is out of range for u8
+    const result = Caster(u8).cast(core.Value{ .number = 256 });
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "Caster u8 negative" {
+    // Negative is out of range for u8
+    const result = Caster(u8).cast(core.Value{ .number = -1 });
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "Caster u8 valid" {
+    const result = try Caster(u8).cast(core.Value{ .number = 255 });
+    try std.testing.expectEqual(@as(u8, 255), result);
+}
+
+// Test makeForeignFunc with a simple function
+fn testAdd(a: f64, b: f64) f64 {
+    return a + b;
+}
+
+test "makeForeignFunc with 2-arg function" {
+    const wrapped = makeForeignFunc(testAdd);
+    const allocator = std.testing.allocator;
+
+    // Create environment
+    const env = try allocator.create(core.Environment);
+    env.* = .{
+        .bindings = std.StringHashMap(core.Value).init(allocator),
+        .outer = null,
+        .allocator = allocator,
+    };
+    defer allocator.destroy(env);
+    defer env.bindings.deinit();
+
+    // Create args list
+    var args = core.ValueList.init(allocator);
+    defer args.deinit(allocator);
+    try args.append(allocator, core.Value{ .number = 3 });
+    try args.append(allocator, core.Value{ .number = 4 });
+
+    const result = try wrapped(env, args);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 7), result.number);
+}
+
+fn testSquare(x: f64) f64 {
+    return x * x;
+}
+
+test "makeForeignFunc with 1-arg function" {
+    const wrapped = makeForeignFunc(testSquare);
+    const allocator = std.testing.allocator;
+
+    const env = try allocator.create(core.Environment);
+    env.* = .{
+        .bindings = std.StringHashMap(core.Value).init(allocator),
+        .outer = null,
+        .allocator = allocator,
+    };
+    defer allocator.destroy(env);
+    defer env.bindings.deinit();
+
+    var args = core.ValueList.init(allocator);
+    defer args.deinit(allocator);
+    try args.append(allocator, core.Value{ .number = 5 });
+
+    const result = try wrapped(env, args);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 25), result.number);
+}

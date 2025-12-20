@@ -40,3 +40,69 @@ pub fn exit(interp: *interpreter.Interpreter, _: *core.Environment, args: core.V
 
     std.process.exit(@intFromFloat(num));
 }
+
+test "exit rejects negative code" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+
+    var args = core.ValueList.init(interp.allocator);
+    try args.append(interp.allocator, core.Value{ .number = -1 });
+
+    const result = exit(&interp, interp.root_env, args, undefined);
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "exit rejects code > 255" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+
+    var args = core.ValueList.init(interp.allocator);
+    try args.append(interp.allocator, core.Value{ .number = 256 });
+
+    const result = exit(&interp, interp.root_env, args, undefined);
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "exit rejects fractional code" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+
+    var args = core.ValueList.init(interp.allocator);
+    try args.append(interp.allocator, core.Value{ .number = 1.5 });
+
+    const result = exit(&interp, interp.root_env, args, undefined);
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "exit rejects NaN" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+
+    var args = core.ValueList.init(interp.allocator);
+    try args.append(interp.allocator, core.Value{ .number = std.math.nan(f64) });
+
+    const result = exit(&interp, interp.root_env, args, undefined);
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}
+
+test "exit rejects wrong argument count" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+
+    const args = core.ValueList.init(interp.allocator);
+    // No arguments
+
+    const result = exit(&interp, interp.root_env, args, undefined);
+    try std.testing.expectError(ElzError.WrongArgumentCount, result);
+}
+
+test "exit rejects non-number" {
+    var interp = interpreter.Interpreter.init(.{}) catch unreachable;
+    defer interp.deinit();
+
+    var args = core.ValueList.init(interp.allocator);
+    try args.append(interp.allocator, core.Value{ .boolean = true });
+
+    const result = exit(&interp, interp.root_env, args, undefined);
+    try std.testing.expectError(ElzError.InvalidArgument, result);
+}

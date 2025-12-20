@@ -134,3 +134,50 @@ pub const Interpreter = struct {
         self.module_cache.deinit();
     }
 };
+
+test "interpreter init and basic eval" {
+    var interp = try Interpreter.init(.{});
+    defer interp.deinit();
+
+    // Test that nil is defined
+    const nil_val = try interp.root_env.get("nil", &interp);
+    try std.testing.expect(nil_val == .nil);
+
+    // Test basic arithmetic
+    var fuel: u64 = 1000;
+    const result = try interp.evalString("(+ 1 2 3)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 6), result.number);
+}
+
+test "interpreter evalString with multiple expressions" {
+    var interp = try Interpreter.init(.{});
+    defer interp.deinit();
+
+    var fuel: u64 = 1000;
+    // Last expression is returned
+    const result = try interp.evalString("(define x 10) (+ x 5)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 15), result.number);
+}
+
+test "interpreter sandbox flags" {
+    // Test with math disabled
+    var interp = try Interpreter.init(.{ .enable_math = false });
+    defer interp.deinit();
+
+    var fuel: u64 = 1000;
+    // With math disabled, + should not be defined
+    const result = interp.evalString("(+ 1 2)", &fuel);
+    try std.testing.expectError(core.ElzError.SymbolNotFound, result);
+}
+
+test "interpreter eval lambda" {
+    var interp = try Interpreter.init(.{});
+    defer interp.deinit();
+
+    var fuel: u64 = 1000;
+    const result = try interp.evalString("((lambda (x) (* x x)) 5)", &fuel);
+    try std.testing.expect(result == .number);
+    try std.testing.expectEqual(@as(f64, 25), result.number);
+}

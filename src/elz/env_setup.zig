@@ -142,3 +142,87 @@ pub fn define_foreign_func(env: *core.Environment, name: []const u8, comptime fu
     const owned_name = try env.allocator.dupe(u8, name);
     try env.bindings.put(owned_name, core.Value{ .foreign_procedure = ff });
 }
+
+const std = @import("std");
+
+test "populate_math adds math functions" {
+    var interp = interpreter.Interpreter.init(.{ .enable_math = true }) catch unreachable;
+    defer interp.deinit();
+
+    // Check that + is defined
+    const plus = try interp.root_env.get("+", &interp);
+    try std.testing.expect(plus == .procedure);
+
+    // Check other math functions
+    const sqrt = try interp.root_env.get("sqrt", &interp);
+    try std.testing.expect(sqrt == .procedure);
+}
+
+test "populate_lists adds list functions" {
+    var interp = interpreter.Interpreter.init(.{ .enable_lists = true }) catch unreachable;
+    defer interp.deinit();
+
+    const cons = try interp.root_env.get("cons", &interp);
+    try std.testing.expect(cons == .procedure);
+
+    const car = try interp.root_env.get("car", &interp);
+    try std.testing.expect(car == .procedure);
+}
+
+test "populate_predicates adds predicate functions" {
+    var interp = interpreter.Interpreter.init(.{ .enable_predicates = true }) catch unreachable;
+    defer interp.deinit();
+
+    const is_null = try interp.root_env.get("null?", &interp);
+    try std.testing.expect(is_null == .procedure);
+
+    const is_eq = try interp.root_env.get("eq?", &interp);
+    try std.testing.expect(is_eq == .procedure);
+}
+
+test "populate_strings adds string functions" {
+    var interp = interpreter.Interpreter.init(.{ .enable_strings = true }) catch unreachable;
+    defer interp.deinit();
+
+    const str_len = try interp.root_env.get("string-length", &interp);
+    try std.testing.expect(str_len == .procedure);
+}
+
+test "populate_io adds io functions" {
+    var interp = interpreter.Interpreter.init(.{ .enable_io = true }) catch unreachable;
+    defer interp.deinit();
+
+    const display = try interp.root_env.get("display", &interp);
+    try std.testing.expect(display == .procedure);
+}
+
+test "define_foreign_func creates callable function" {
+    const allocator = std.testing.allocator;
+
+    const env = try allocator.create(core.Environment);
+    env.* = .{
+        .bindings = std.StringHashMap(core.Value).init(allocator),
+        .outer = null,
+        .allocator = allocator,
+    };
+    defer allocator.destroy(env);
+    defer {
+        var it = env.bindings.iterator();
+        while (it.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+        }
+        env.bindings.deinit();
+    }
+
+    const testFn = struct {
+        fn add(a: f64, b: f64) f64 {
+            return a + b;
+        }
+    }.add;
+
+    try define_foreign_func(env, "my-add", testFn);
+
+    const val = env.bindings.get("my-add");
+    try std.testing.expect(val != null);
+    try std.testing.expect(val.? == .foreign_procedure);
+}
