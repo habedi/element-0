@@ -37,7 +37,7 @@ help: ## Show the help messages for all targets
 	@grep -E '^[a-zA-Z_-]+:.*## .*$$' Makefile | \
 	awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-all: build test lint docs  ## build, test, lint, and doc
+all: clean format lint build docs test test-elz run run-elz
 
 init: ## Initialize a new Zig project
 	@echo "Initializing a new Zig project..."

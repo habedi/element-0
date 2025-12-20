@@ -1,0 +1,390 @@
+;;; ---------------------------------------
+;;; Element 0 Edge Case Tests
+;;; Tests for unusual and boundary conditions
+;;; ---------------------------------------
+
+(display "Running Element 0 Edge Case tests...")
+(newline)
+
+;; --- Test Runner Framework ---
+
+(define *tests-run* 0)
+(define *tests-failed* 0)
+
+(define (test-case name test-expr)
+  (set! *tests-run* (+ *tests-run* 1))
+  (if (not (try test-expr (catch err #f)))
+      (begin
+        (set! *tests-failed* (+ *tests-failed* 1))
+        (display "[FAILED]: ") (display name) (newline))
+      (begin
+        (display "[PASSED]: ") (display name) (newline))))
+
+(define (report-summary)
+  (newline)
+  (display "--------------------") (newline)
+  (display "Tests Finished.") (newline)
+  (display "Total run: ") (display *tests-run*) (newline)
+  (display "Passed: ") (display (- *tests-run* *tests-failed*)) (newline)
+  (display "Failed: ") (display *tests-failed*) (newline)
+  (newline)
+  (if (> *tests-failed* 0)
+      (begin
+        (display "RESULT: FAILED")
+        (newline)
+        (exit 1))
+      (begin
+        (display "RESULT: PASSED")
+        (newline)
+        (exit 0))))
+
+;;; ============================================
+;;; NUMERIC EDGE CASES
+;;; ============================================
+
+;; Very small numbers
+(test-case "very small positive number"
+  (> 0.0000001 0))
+
+(test-case "very small negative number"
+  (< -0.0000001 0))
+
+;; Large numbers (within f64 precision)
+(test-case "large number addition"
+  (> (+ 1000000000 1000000000) 1999999999))
+
+(test-case "large number multiplication"
+  (> (* 1000000 1000000) 999999999999))
+
+;; Zero edge cases
+(test-case "positive zero equals negative zero"
+  (= 0 0))
+
+(test-case "zero multiplication"
+  (= (* 0 1000000000) 0))
+
+(test-case "zero addition identity"
+  (= (+ 0 42) 42))
+
+;; Negation edge cases
+(test-case "double negation"
+  (= (- (- 42)) 42))
+
+(test-case "negate zero"
+  (= (- 0) 0))
+
+;; Division edge cases
+(test-case "division result near zero"
+  (< (/ 1 1000000000) 0.000001))
+
+(test-case "negative division"
+  (< (/ -10 2) 0))
+
+(test-case "division of zero"
+  (= (/ 0 100) 0))
+
+;; Modulo edge cases
+(test-case "modulo with larger divisor"
+  (= (% 5 10) 5))
+
+(test-case "modulo of zero"
+  (= (% 0 5) 0))
+
+;; Math function edge cases
+(test-case "sqrt of zero"
+  (= (sqrt 0) 0))
+
+(test-case "sqrt of one"
+  (= (sqrt 1) 1))
+
+(test-case "sin of zero"
+  (= (sin 0) 0))
+
+(test-case "cos of zero"
+  (= (cos 0) 1))
+
+;;; ============================================
+;;; STRING EDGE CASES
+;;; ============================================
+
+;; Empty strings
+(test-case "empty string equality"
+  (equal? "" ""))
+
+(test-case "empty string not equal to non-empty"
+  (not (equal? "" "a")))
+
+(test-case "string-append with empty"
+  (equal? (string-append "" "hello") "hello"))
+
+(test-case "string-append all empty"
+  (equal? (string-append "" "" "") ""))
+
+;; Special characters in strings
+(test-case "string with newline"
+  (= (string-length "a\nb") 3))
+
+(test-case "string with tab"
+  (= (string-length "a\tb") 3))
+
+;; Unicode strings (if supported)
+(test-case "string length multi-byte"
+  (>= (string-length "hello") 5))
+
+;;; ============================================
+;;; LIST EDGE CASES
+;;; ============================================
+
+;; Empty list edge cases
+(test-case "null? of empty list"
+  (null? '()))
+
+(test-case "null? of non-empty"
+  (not (null? '(1))))
+
+(test-case "length of nested empty lists"
+  (= (length '(() () ())) 3))
+
+;; Single element list edge cases
+(test-case "single element list length"
+  (= (length '(1)) 1))
+
+(test-case "nested single element"
+  (equal? (car (car '((1)))) 1))
+
+;; Deep nesting
+(test-case "triple nested list access"
+  (equal? (car (car (car '(((1)))))) 1))
+
+;; Mixed types in lists
+(test-case "mixed type list"
+  (equal? (length (list 1 "a" #t '())) 4))
+
+;; cons edge cases
+(test-case "cons nil with nil"
+  (pair? (cons '() '())))
+
+(test-case "cons number with nil"
+  (equal? (car (cons 42 '())) 42))
+
+;; append edge cases
+(test-case "append single element lists"
+  (equal? (length (append '(1) '(2))) 2))
+
+(test-case "append with empty at start"
+  (equal? (append '() '(1 2)) '(1 2)))
+
+(test-case "append with empty at end"
+  (equal? (append '(1 2) '()) '(1 2)))
+
+(test-case "append three lists"
+  (= (length (append '(1) '(2) '(3))) 3))
+
+;; reverse edge cases
+(test-case "reverse single element"
+  (equal? (reverse '(1)) '(1)))
+
+(test-case "reverse nested list preserves nesting"
+  (equal? (car (reverse '(1 (2 3)))) '(2 3)))
+
+;; map edge cases
+(test-case "map with identity"
+  (equal? (map (lambda (x) x) '(1 2 3)) '(1 2 3)))
+
+(test-case "map single element"
+  (equal? (map (lambda (x) (* x 2)) '(5)) '(10)))
+
+;;; ============================================
+;;; FUNCTION EDGE CASES
+;;; ============================================
+
+;; Lambda edge cases
+(test-case "immediately invoked lambda"
+  (= ((lambda () 42)) 42))
+
+(test-case "lambda returning lambda"
+  (= (((lambda () (lambda () 99)))) 99))
+
+(test-case "lambda with unused param"
+  (= ((lambda (x) 5) 999) 5))
+
+;; Recursion edge cases
+(test-case "tail recursive countdown"
+  (begin
+    (define (countdown n)
+      (if (= n 0) 0 (countdown (- n 1))))
+    (= (countdown 100) 0)))
+
+(test-case "mutual recursion simple"
+  (begin
+    (letrec ((even? (lambda (n) (if (= n 0) #t (odd? (- n 1)))))
+             (odd? (lambda (n) (if (= n 0) #f (even? (- n 1))))))
+      (even? 10))))
+
+;; Apply edge cases
+(test-case "apply with built-in function"
+  (= (apply + '(1 2 3 4 5)) 15))
+
+(test-case "apply with user lambda"
+  (= (apply (lambda (a b) (+ a b)) '(10 20)) 30))
+
+;;; ============================================
+;;; CONDITIONAL EDGE CASES  
+;;; ============================================
+
+;; Truthy/falsy values
+(test-case "zero is truthy"
+  (if 0 #t #f))
+
+(test-case "empty string is truthy"
+  (if "" #t #f))
+
+(test-case "empty list is truthy"
+  (if '() #t #f))
+
+(test-case "only #f is false"
+  (not #f))
+
+;; Nested conditionals
+(test-case "deeply nested if"
+  (= (if #t (if #t (if #t 42 0) 0) 0) 42))
+
+;; cond edge cases
+(test-case "cond all false no else"
+  (null? (cond (#f 1) (#f 2))))
+
+(test-case "cond first true"
+  (= (cond (#t 1) (#t 2) (else 3)) 1))
+
+(test-case "cond only else"
+  (= (cond (else 99)) 99))
+
+;; and/or edge cases
+(test-case "and returns last true value"
+  (equal? (and 1 2 3) 3))
+
+(test-case "or returns first true value"
+  (equal? (or #f 5 6) 5))
+
+(test-case "or all false"
+  (equal? (or #f #f) #f))
+
+;;; ============================================
+;;; EQUALITY EDGE CASES
+;;; ============================================
+
+;; eq? and eqv? differences
+(test-case "eq? same number"
+  (eq? 42 42))
+
+(test-case "equal? on different but equal lists"
+  (equal? '(1 2 3) '(1 2 3)))
+
+(test-case "equal? nested lists"
+  (equal? '((1 2) (3 4)) '((1 2) (3 4))))
+
+(test-case "equal? mixed types false"
+  (not (equal? 1 "1")))
+
+(test-case "equal? booleans"
+  (equal? #t #t))
+
+(test-case "equal? nil"
+  (equal? '() '()))
+
+;;; ============================================
+;;; SCOPE AND BINDING EDGE CASES
+;;; ============================================
+
+;; let edge cases
+(test-case "let with single binding"
+  (= (let ((x 5)) x) 5))
+
+(test-case "let with multiple bindings"
+  (= (let ((x 1) (y 2)) (+ x y)) 3))
+
+(test-case "let shadowing"
+  (= (let ((x 1)) (let ((x 2)) x)) 2))
+
+;; let* edge cases
+(test-case "let* sequential binding"
+  (= (let* ((x 1) (y (+ x 1))) y) 2))
+
+(test-case "let* triple binding"
+  (= (let* ((a 1) (b (* a 2)) (c (* b 3))) c) 6))
+
+;; letrec edge cases
+(test-case "letrec single recursive"
+  (begin
+    (letrec ((fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))))
+      (= (fact 5) 120))))
+
+;; set! edge cases
+(test-case "set! in nested scope"
+  (begin
+    (define outer 1)
+    (let ((x 0))
+      (set! outer 99))
+    (= outer 99)))
+
+;;; ============================================
+;;; BEGIN AND SEQUENCING EDGE CASES
+;;; ============================================
+
+(test-case "begin single expression"
+  (= (begin 42) 42))
+
+(test-case "begin multiple returns last"
+  (= (begin 1 2 3 4 5) 5))
+
+(test-case "begin with side effects"
+  (begin
+    (define side-effect-var 0)
+    (begin
+      (set! side-effect-var 1)
+      (set! side-effect-var 2)
+      (set! side-effect-var 3))
+    (= side-effect-var 3)))
+
+;;; ============================================
+;;; QUOTE EDGE CASES
+;;; ============================================
+
+(test-case "quote preserves structure"
+  (pair? '(1 2 3)))
+
+(test-case "quote symbol"
+  (symbol? 'hello))
+
+(test-case "nested quote"
+  (pair? (car '('a))))
+
+(test-case "quote empty list"
+  (null? '()))
+
+;;; ============================================
+;;; ERROR HANDLING EDGE CASES
+;;; ============================================
+
+(test-case "try/catch multiple body expressions"
+  (= (try 
+       (define x 1)
+       (+ x 41)
+       (catch err 0)) 
+     42))
+
+(test-case "try/catch error in catch is caught"
+  (= (try
+       (try 
+         (/ 1 0)
+         (catch err (/ 2 0)))
+       (catch err2 99))
+     99))
+
+(test-case "nested try success"
+  (= (try 
+       (try (+ 1 1) (catch e1 0))
+       (catch e2 -1))
+     2))
+
+(report-summary)

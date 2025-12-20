@@ -177,13 +177,11 @@ fn evalIf(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel
         .pair => |p_rest| p_rest,
         else => return ElzError.IfInvalidArguments,
     };
-    const test_expr = p_test.car;
     const p_consequent = switch (p_test.cdr) {
         .pair => |p_rest| p_rest,
         else => return ElzError.IfInvalidArguments,
     };
-    const consequent_expr = p_consequent.car;
-    const condition = try eval(interp, &test_expr, env, fuel);
+    const condition = try eval(interp, &p_test.car, env, fuel);
 
     const is_true = switch (condition) {
         .boolean => |b| b,
@@ -191,7 +189,8 @@ fn evalIf(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel
     };
 
     if (is_true) {
-        current_ast.* = &consequent_expr;
+        // Point to the car of p_consequent (heap-allocated in the AST)
+        current_ast.* = &p_consequent.car;
         return .unspecified;
     } else {
         const p_alternative = switch (p_consequent.cdr) {
@@ -200,6 +199,7 @@ fn evalIf(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel
             else => return ElzError.IfInvalidArguments,
         };
         if (p_alternative.cdr != .nil) return ElzError.IfInvalidArguments;
+        // Point to the car of p_alternative (heap-allocated in the AST)
         current_ast.* = &p_alternative.car;
         return .unspecified;
     }
