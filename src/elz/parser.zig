@@ -189,7 +189,7 @@ pub fn read(source: []const u8, allocator: std.mem.Allocator) ElzError!Value {
     var tokens = tokenize(source, allocator) catch |err| {
         return err;
     };
-    defer tokens.deinit();
+    defer tokens.deinit(allocator);
     if (tokens.items.len == 0) return ElzError.EmptyInput;
     var parser = Parser{
         .tokens = tokens,

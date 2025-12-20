@@ -89,6 +89,9 @@ pub const Interpreter = struct {
         try env_setup.populate_control(&self);
         try env_setup.populate_modules(&self);
         try env_setup.populate_process(&self);
+        try env_setup.populate_vectors(&self);
+        try env_setup.populate_hashmaps(&self);
+        try env_setup.populate_ports(&self);
 
         const std_lib_source = @embedFile("../stdlib/std.elz");
         var std_lib_forms = try parser.readAll(std_lib_source, allocator);

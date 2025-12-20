@@ -198,6 +198,124 @@ pub fn map(interp: *interpreter.Interpreter, env: *core.Environment, args: core.
     return result_head;
 }
 
+/// `list_ref` returns the k-th element of a list.
+/// Syntax: (list-ref list k)
+pub fn list_ref(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const list_val = args.items[0];
+    const k_val = args.items[1];
+    if (k_val != .number) return ElzError.InvalidArgument;
+    const k = k_val.number;
+    if (k < 0 or @floor(k) != k) return ElzError.InvalidArgument;
+
+    var idx: usize = @intFromFloat(k);
+    var current = list_val;
+    while (idx > 0) : (idx -= 1) {
+        if (current != .pair) return ElzError.InvalidArgument;
+        current = current.pair.cdr;
+    }
+    if (current != .pair) return ElzError.InvalidArgument;
+    return current.pair.car.deep_clone(env.allocator);
+}
+
+/// `list_tail` returns the sublist of a list starting at position k.
+/// Syntax: (list-tail list k)
+pub fn list_tail(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const list_val = args.items[0];
+    const k_val = args.items[1];
+    if (k_val != .number) return ElzError.InvalidArgument;
+    const k = k_val.number;
+    if (k < 0 or @floor(k) != k) return ElzError.InvalidArgument;
+
+    var idx: usize = @intFromFloat(k);
+    var current = list_val;
+    while (idx > 0) : (idx -= 1) {
+        if (current != .pair) return ElzError.InvalidArgument;
+        current = current.pair.cdr;
+    }
+    return current.deep_clone(env.allocator);
+}
+
+/// `memq` returns the first sublist whose car is eq? to obj, or #f.
+/// Syntax: (memq obj list)
+pub fn memq(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const obj = args.items[0];
+    var current = args.items[1];
+
+    while (current != .nil) {
+        if (current != .pair) return ElzError.InvalidArgument;
+        const p = current.pair;
+        // eq? comparison - pointer/value equality
+        if (eqCheck(obj, p.car)) {
+            return current;
+        }
+        current = p.cdr;
+    }
+    return Value{ .boolean = false };
+}
+
+/// Helper for eq? check
+fn eqCheck(a: Value, b: Value) bool {
+    return switch (a) {
+        .nil => b == .nil,
+        .boolean => |av| if (b == .boolean) av == b.boolean else false,
+        .number => |av| if (b == .number) av == b.number else false,
+        .character => |av| if (b == .character) av == b.character else false,
+        .symbol => |av| if (b == .symbol) std.mem.eql(u8, av, b.symbol) else false,
+        .pair => |av| if (b == .pair) av == b.pair else false,
+        .vector => |av| if (b == .vector) av == b.vector else false,
+        else => false,
+    };
+}
+
+/// `assq` returns the first pair in alist whose car is eq? to obj, or #f.
+/// Syntax: (assq obj alist)
+pub fn assq(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const obj = args.items[0];
+    var current = args.items[1];
+
+    while (current != .nil) {
+        if (current != .pair) return ElzError.InvalidArgument;
+        const p = current.pair;
+        if (p.car != .pair) return ElzError.InvalidArgument;
+        if (eqCheck(obj, p.car.pair.car)) {
+            return p.car;
+        }
+        current = p.cdr;
+    }
+    return Value{ .boolean = false };
+}
+
+/// `is_pair` checks if a value is a pair.
+/// Syntax: (pair? obj)
+pub fn is_pair(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = args.items[0] == .pair };
+}
+
+/// `set_car` modifies the car of a pair.
+/// Syntax: (set-car! pair obj)
+pub fn set_car(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const p = args.items[0];
+    if (p != .pair) return ElzError.InvalidArgument;
+    p.pair.car = try args.items[1].deep_clone(env.allocator);
+    return Value.unspecified;
+}
+
+/// `set_cdr` modifies the cdr of a pair.
+/// Syntax: (set-cdr! pair obj)
+pub fn set_cdr(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const p = args.items[0];
+    if (p != .pair) return ElzError.InvalidArgument;
+    p.pair.cdr = try args.items[1].deep_clone(env.allocator);
+    return Value.unspecified;
+}
+
 test "list primitives" {
     const allocator = std.testing.allocator;
     const testing = std.testing;

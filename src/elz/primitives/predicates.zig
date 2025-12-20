@@ -98,6 +98,10 @@ fn is_eqv_internal(a: Value, b: Value) bool {
             .procedure => |bv| av == bv,
             else => false,
         },
+        .macro => |av| switch (b) {
+            .macro => |bv| av == bv,
+            else => false,
+        },
         .foreign_procedure => |av| switch (b) {
             .foreign_procedure => |bv| av == bv,
             else => false,
@@ -116,6 +120,18 @@ fn is_eqv_internal(a: Value, b: Value) bool {
         },
         .module => |av| switch (b) {
             .module => |bv| av == bv,
+            else => false,
+        },
+        .vector => |av| switch (b) {
+            .vector => |bv| av == bv,
+            else => false,
+        },
+        .hash_map => |av| switch (b) {
+            .hash_map => |bv| av == bv,
+            else => false,
+        },
+        .port => |av| switch (b) {
+            .port => |bv| av == bv,
             else => false,
         },
         .unspecified => b == .unspecified,
@@ -193,6 +209,30 @@ pub fn is_procedure(_: *interpreter.Interpreter, _: *core.Environment, args: cor
     if (args.items.len != 1) return ElzError.WrongArgumentCount;
     const v = args.items[0];
     return Value{ .boolean = (v == .procedure or v == .closure or v == .foreign_procedure) };
+}
+
+/// `is_char` checks if a value is a character.
+pub fn is_char(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    return Value{ .boolean = args.items[0] == .character };
+}
+
+/// `is_integer` checks if a value is an integer (number with no fractional part).
+pub fn is_integer(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    const v = args.items[0];
+    if (v != .number) return Value{ .boolean = false };
+    const n = v.number;
+    return Value{ .boolean = @floor(n) == n };
+}
+
+/// `logical_not` returns #t if the argument is #f, and #f otherwise.
+pub fn logical_not(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    const v = args.items[0];
+    // In Scheme, only #f is false; everything else is true
+    const is_false = (v == .boolean and v.boolean == false);
+    return Value{ .boolean = is_false };
 }
 
 /// `is_eqv` checks if two values are equivalent. `eqv?` is a finer-grained

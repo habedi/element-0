@@ -94,6 +94,87 @@ fn evalQuote(rest: Value, env: *Environment) !Value {
     return try p_arg.car.deep_clone(env.allocator);
 }
 
+/// Evaluates a `quasiquote` special form.
+/// Handles unquote (,) and unquote-splicing (,@) within templates.
+fn evalQuasiquote(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64) !Value {
+    const p_arg = switch (rest) {
+        .pair => |p_rest| p_rest,
+        else => return ElzError.InvalidArgument,
+    };
+    if (p_arg.cdr != .nil) return ElzError.InvalidArgument;
+    return try expandQuasiquote(interp, p_arg.car, env, fuel, 1);
+}
+
+/// Recursively expands a quasiquote template.
+/// Level tracks nesting depth of quasiquotes.
+fn expandQuasiquote(interp: *interpreter.Interpreter, template: Value, env: *Environment, fuel: *u64, level: usize) ElzError!Value {
+    switch (template) {
+        .pair => |p| {
+            // Check for (unquote expr) or (unquote-splicing expr)
+            if (p.car.is_symbol("unquote")) {
+                if (level == 1) {
+                    // Evaluate the unquoted expression
+                    const unquote_rest = switch (p.cdr) {
+                        .pair => |up| up,
+                        else => return ElzError.InvalidArgument,
+                    };
+                    if (unquote_rest.cdr != .nil) return ElzError.InvalidArgument;
+                    return try eval(interp, &unquote_rest.car, env, fuel);
+                } else {
+                    // Decrease level and continue
+                    const new_cdr = try expandQuasiquote(interp, p.cdr, env, fuel, level - 1);
+                    const new_pair = try env.allocator.create(core.Pair);
+                    new_pair.* = .{ .car = p.car, .cdr = new_cdr };
+                    return Value{ .pair = new_pair };
+                }
+            } else if (p.car.is_symbol("quasiquote")) {
+                // Increase level for nested quasiquotes
+                const new_cdr = try expandQuasiquote(interp, p.cdr, env, fuel, level + 1);
+                const new_pair = try env.allocator.create(core.Pair);
+                new_pair.* = .{ .car = p.car, .cdr = new_cdr };
+                return Value{ .pair = new_pair };
+            } else if (p.car == .pair) {
+                // Check if first element is (unquote-splicing expr)
+                const inner = p.car.pair;
+                if (inner.car.is_symbol("unquote-splicing") and level == 1) {
+                    const splice_rest = switch (inner.cdr) {
+                        .pair => |sp| sp,
+                        else => return ElzError.InvalidArgument,
+                    };
+                    if (splice_rest.cdr != .nil) return ElzError.InvalidArgument;
+                    const splice_result = try eval(interp, &splice_rest.car, env, fuel);
+                    // Append the spliced list to the rest
+                    const rest_expanded = try expandQuasiquote(interp, p.cdr, env, fuel, level);
+                    return try appendLists(env.allocator, splice_result, rest_expanded);
+                }
+            }
+            // Normal pair - recurse on both car and cdr
+            const new_car = try expandQuasiquote(interp, p.car, env, fuel, level);
+            const new_cdr = try expandQuasiquote(interp, p.cdr, env, fuel, level);
+            const new_pair = try env.allocator.create(core.Pair);
+            new_pair.* = .{ .car = new_car, .cdr = new_cdr };
+            return Value{ .pair = new_pair };
+        },
+        else => {
+            // Self-quoting values
+            return try template.deep_clone(env.allocator);
+        },
+    }
+}
+
+/// Helper: Append two lists for unquote-splicing.
+fn appendLists(allocator: std.mem.Allocator, list1: Value, list2: Value) ElzError!Value {
+    if (list1 == .nil) return list2;
+    if (list1 != .pair) return ElzError.InvalidArgument;
+
+    const new_pair = try allocator.create(core.Pair);
+    new_pair.* = .{
+        .car = try list1.pair.car.deep_clone(allocator),
+        .cdr = try appendLists(allocator, list1.pair.cdr, list2),
+    };
+    return Value{ .pair = new_pair };
+}
+
 /// Evaluates an `import` special form.
 fn evalImport(
     interp: *interpreter.Interpreter,
@@ -251,6 +332,89 @@ fn evalCond(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fu
     return Value.nil;
 }
 
+/// Evaluates a `case` special form.
+/// Syntax: (case key ((datum1 datum2 ...) expr1 ...) ... (else expr))
+fn evalCase(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value) !Value {
+    // Get the key expression
+    const rest_pair = switch (rest) {
+        .pair => |p| p,
+        else => return ElzError.InvalidArgument,
+    };
+    const key = try eval(interp, &rest_pair.car, env, fuel);
+
+    var current_clause_node = rest_pair.cdr;
+    while (current_clause_node != .nil) {
+        const clause_pair = switch (current_clause_node) {
+            .pair => |cp| cp,
+            else => return ElzError.InvalidArgument,
+        };
+        const clause = clause_pair.car;
+        const clause_p = switch (clause) {
+            .pair => |cp| cp,
+            else => return ElzError.InvalidArgument,
+        };
+
+        const datums = clause_p.car;
+        const body = clause_p.cdr;
+
+        // Check for else clause
+        if (datums.is_symbol("else")) {
+            if (body == .nil) return Value.nil;
+            var current_body_node = body;
+            while (current_body_node.pair.cdr != .nil) {
+                _ = try eval(interp, &current_body_node.pair.car, env, fuel);
+                current_body_node = current_body_node.pair.cdr;
+            }
+            current_ast.* = &current_body_node.pair.car;
+            return .unspecified;
+        }
+
+        // Check if key matches any datum in the list
+        var found = false;
+        var datum_node = datums;
+        while (datum_node != .nil) {
+            const datum_pair = switch (datum_node) {
+                .pair => |dp| dp,
+                else => return ElzError.InvalidArgument,
+            };
+            const datum = datum_pair.car;
+
+            // Use eqv? semantics for comparison
+            if (is_eqv(key, datum)) {
+                found = true;
+                break;
+            }
+            datum_node = datum_pair.cdr;
+        }
+
+        if (found) {
+            if (body == .nil) return Value.nil;
+            var current_body_node = body;
+            while (current_body_node.pair.cdr != .nil) {
+                _ = try eval(interp, &current_body_node.pair.car, env, fuel);
+                current_body_node = current_body_node.pair.cdr;
+            }
+            current_ast.* = &current_body_node.pair.car;
+            return .unspecified;
+        }
+
+        current_clause_node = clause_pair.cdr;
+    }
+    return Value.nil;
+}
+
+/// Helper for case: checks if two values are eqv?
+fn is_eqv(a: Value, b: Value) bool {
+    return switch (a) {
+        .number => |n| if (b == .number) n == b.number else false,
+        .boolean => |bl| if (b == .boolean) bl == b.boolean else false,
+        .character => |c| if (b == .character) c == b.character else false,
+        .symbol => |s| if (b == .symbol) std.mem.eql(u8, s, b.symbol) else false,
+        .nil => b == .nil,
+        else => false,
+    };
+}
+
 /// Evaluates an `and` special form.
 fn evalAnd(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fuel: *u64, current_ast: **const Value) !Value {
     if (rest == .nil) return Value{ .boolean = true };
@@ -345,6 +509,56 @@ fn evalSet(interp: *interpreter.Interpreter, rest: Value, env: *Environment, fue
     const value = try eval(interp, &p_expr.car, env, fuel);
     try env.update(interp, symbol.symbol, value);
     return Value.nil;
+}
+
+/// Evaluates a `define-macro` special form.
+/// Syntax: (define-macro (name args...) body...)
+fn evalDefineMacro(interp: *interpreter.Interpreter, rest: Value, env: *Environment) !Value {
+    const p_sig = switch (rest) {
+        .pair => |p| p,
+        else => return ElzError.DefineInvalidArguments,
+    };
+
+    // Get (name args...) list
+    const signature = p_sig.car;
+    const body = p_sig.cdr;
+
+    const sig_pair = switch (signature) {
+        .pair => |p| p,
+        else => return ElzError.DefineInvalidArguments,
+    };
+
+    // Get macro name
+    const macro_name = switch (sig_pair.car) {
+        .symbol => |s| s,
+        else => return ElzError.DefineInvalidSymbol,
+    };
+
+    // Get parameters
+    var params_list = core.ValueList.init(env.allocator);
+    var current_param = sig_pair.cdr;
+    while (current_param != .nil) {
+        const param_p = switch (current_param) {
+            .pair => |p| p,
+            else => return ElzError.LambdaInvalidParams,
+        };
+        if (param_p.car != .symbol) return ElzError.LambdaInvalidParams;
+        try params_list.append(param_p.car);
+        current_param = param_p.cdr;
+    }
+
+    // Create macro
+    const macro = try env.allocator.create(core.Macro);
+    macro.* = .{
+        .name = macro_name,
+        .params = params_list,
+        .body = try body.deep_clone(env.allocator),
+        .env = env,
+    };
+
+    const macro_val = Value{ .macro = macro };
+    try env.set(interp, macro_name, macro_val);
+    return macro_val;
 }
 
 /// Evaluates a `lambda` special form.
@@ -610,7 +824,7 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
         const env = current_env;
 
         switch (ast.*) {
-            .number, .boolean, .character, .nil, .closure, .procedure, .foreign_procedure, .opaque_pointer, .cell, .module, .unspecified => return ast.*,
+            .number, .boolean, .character, .nil, .closure, .macro, .procedure, .foreign_procedure, .opaque_pointer, .cell, .module, .vector, .hash_map, .port, .unspecified => return ast.*,
             .string => |s| return Value{ .string = try env.allocator.dupe(u8, s) },
             .symbol => |sym| return env.get(sym, interp),
             .pair => |p| {
@@ -618,7 +832,7 @@ pub fn eval(interp: *interpreter.Interpreter, ast_start: *const Value, env_start
                 const first = p.car;
                 const rest = p.cdr;
 
-                const result = try if (first.is_symbol("quote")) evalQuote(rest, env) else if (first.is_symbol("import")) evalImport(interp, rest, env, fuel) else if (first.is_symbol("if")) evalIf(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("cond")) evalCond(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("and")) evalAnd(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("or")) evalOr(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("define")) evalDefine(interp, rest, env, fuel) else if (first.is_symbol("set!")) evalSet(interp, rest, env, fuel) else if (first.is_symbol("lambda")) evalLambda(rest, env) else if (first.is_symbol("begin")) evalBegin(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("let") or first.is_symbol("let*")) evalLet(interp, first, rest, env, fuel, &current_ast, &current_env) else if (first.is_symbol("letrec")) evalLetRec(interp, ast.*, env, fuel) else if (first.is_symbol("try")) evalTry(interp, rest, env, fuel) else evalApplication(interp, first, rest, env, fuel, &current_ast, &current_env);
+                const result = try if (first.is_symbol("quote")) evalQuote(rest, env) else if (first.is_symbol("quasiquote")) evalQuasiquote(interp, rest, env, fuel) else if (first.is_symbol("import")) evalImport(interp, rest, env, fuel) else if (first.is_symbol("if")) evalIf(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("cond")) evalCond(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("case")) evalCase(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("and")) evalAnd(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("or")) evalOr(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("define")) evalDefine(interp, rest, env, fuel) else if (first.is_symbol("define-macro")) evalDefineMacro(interp, rest, env) else if (first.is_symbol("set!")) evalSet(interp, rest, env, fuel) else if (first.is_symbol("lambda")) evalLambda(rest, env) else if (first.is_symbol("begin")) evalBegin(interp, rest, env, fuel, &current_ast) else if (first.is_symbol("let") or first.is_symbol("let*")) evalLet(interp, first, rest, env, fuel, &current_ast, &current_env) else if (first.is_symbol("letrec")) evalLetRec(interp, ast.*, env, fuel) else if (first.is_symbol("try")) evalTry(interp, rest, env, fuel) else evalApplication(interp, first, rest, env, fuel, &current_ast, &current_env);
 
                 if (result == .unspecified) {
                     if (current_ast != original_ast_ptr) {

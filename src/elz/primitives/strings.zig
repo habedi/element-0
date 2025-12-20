@@ -70,6 +70,327 @@ pub fn char_eq(_: *interpreter.Interpreter, _: *core.Environment, args: core.Val
     return Value{ .boolean = a.character == b.character };
 }
 
+/// `char_lt` checks if the first character is less than the second.
+pub fn char_lt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const a = args.items[0];
+    const b = args.items[1];
+    if (a != .character or b != .character) return ElzError.InvalidArgument;
+    return Value{ .boolean = a.character < b.character };
+}
+
+/// `char_gt` checks if the first character is greater than the second.
+pub fn char_gt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const a = args.items[0];
+    const b = args.items[1];
+    if (a != .character or b != .character) return ElzError.InvalidArgument;
+    return Value{ .boolean = a.character > b.character };
+}
+
+/// `char_le` checks if the first character is less than or equal to the second.
+pub fn char_le(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const a = args.items[0];
+    const b = args.items[1];
+    if (a != .character or b != .character) return ElzError.InvalidArgument;
+    return Value{ .boolean = a.character <= b.character };
+}
+
+/// `char_ge` checks if the first character is greater than or equal to the second.
+pub fn char_ge(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const a = args.items[0];
+    const b = args.items[1];
+    if (a != .character or b != .character) return ElzError.InvalidArgument;
+    return Value{ .boolean = a.character >= b.character };
+}
+
+/// `char_to_integer` converts a character to its Unicode code point.
+pub fn char_to_integer(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    const c = args.items[0];
+    if (c != .character) return ElzError.InvalidArgument;
+    return Value{ .number = @floatFromInt(c.character) };
+}
+
+/// `integer_to_char` converts a Unicode code point to a character.
+pub fn integer_to_char(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    const n = args.items[0];
+    if (n != .number) return ElzError.InvalidArgument;
+    const num = n.number;
+    if (num < 0 or @floor(num) != num or num > 0x10FFFF) return ElzError.InvalidArgument;
+    return Value{ .character = @intFromFloat(num) };
+}
+
+/// `string_ref` returns the character at a given index in a string.
+/// Index is 0-based.
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a string and an index.
+pub fn string_ref(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const str = args.items[0];
+    const idx = args.items[1];
+    if (str != .string) return ElzError.InvalidArgument;
+    if (idx != .number) return ElzError.InvalidArgument;
+
+    const index = idx.number;
+    if (index < 0 or @floor(index) != index) return ElzError.InvalidArgument;
+
+    const idx_usize: usize = @intFromFloat(index);
+
+    // Iterate through UTF-8 codepoints to find the character at the given index
+    var it = std.unicode.Utf8View.initUnchecked(str.string).iterator();
+    var current_idx: usize = 0;
+    while (it.nextCodepoint()) |cp| {
+        if (current_idx == idx_usize) {
+            return Value{ .character = cp };
+        }
+        current_idx += 1;
+    }
+
+    // Index out of bounds
+    return ElzError.InvalidArgument;
+}
+
+/// `substring` extracts a portion of a string.
+/// Takes a string, start index, and end index (exclusive).
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a string, start index, and end index.
+pub fn substring(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 3) return ElzError.WrongArgumentCount;
+    const str = args.items[0];
+    const start_val = args.items[1];
+    const end_val = args.items[2];
+
+    if (str != .string) return ElzError.InvalidArgument;
+    if (start_val != .number or end_val != .number) return ElzError.InvalidArgument;
+
+    const start = start_val.number;
+    const end = end_val.number;
+
+    if (start < 0 or end < 0 or @floor(start) != start or @floor(end) != end) {
+        return ElzError.InvalidArgument;
+    }
+
+    const start_idx: usize = @intFromFloat(start);
+    const end_idx: usize = @intFromFloat(end);
+
+    if (start_idx > end_idx) return ElzError.InvalidArgument;
+
+    // Find byte offsets for the character indices
+    var it = std.unicode.Utf8View.initUnchecked(str.string).iterator();
+    var current_idx: usize = 0;
+    var start_byte: usize = 0;
+    var end_byte: usize = str.string.len;
+    var found_start = false;
+    var found_end = false;
+
+    var byte_offset: usize = 0;
+    while (it.nextCodepointSlice()) |slice| {
+        if (current_idx == start_idx) {
+            start_byte = byte_offset;
+            found_start = true;
+        }
+        if (current_idx == end_idx) {
+            end_byte = byte_offset;
+            found_end = true;
+            break;
+        }
+        byte_offset += slice.len;
+        current_idx += 1;
+    }
+
+    // Handle edge case: end is at string length
+    if (!found_end and current_idx == end_idx) {
+        end_byte = byte_offset;
+        found_end = true;
+    }
+
+    if (!found_start or (end_idx > 0 and !found_end and end_idx != current_idx + 1)) {
+        return ElzError.InvalidArgument;
+    }
+
+    if (start_idx == 0) found_start = true;
+    if (start_byte > end_byte) return ElzError.InvalidArgument;
+
+    const result = try env.allocator.dupe(u8, str.string[start_byte..end_byte]);
+    return Value{ .string = result };
+}
+
+/// `number_to_string` converts a number to its string representation.
+/// Syntax: (number->string num)
+pub fn number_to_string(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    const num_val = args.items[0];
+    if (num_val != .number) return ElzError.InvalidArgument;
+
+    const num = num_val.number;
+
+    // Format the number, removing unnecessary decimal places for integers
+    var buf: [64]u8 = undefined;
+    const formatted = std.fmt.bufPrint(&buf, "{d}", .{num}) catch return ElzError.OutOfMemory;
+
+    return Value{ .string = try env.allocator.dupe(u8, formatted) };
+}
+
+/// `string_to_number` converts a string to a number.
+/// Syntax: (string->number str)
+/// Returns #f if the string cannot be parsed as a number.
+pub fn string_to_number(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    const str_val = args.items[0];
+    if (str_val != .string) return ElzError.InvalidArgument;
+
+    const str = str_val.string;
+    const num = std.fmt.parseFloat(f64, str) catch {
+        return Value{ .boolean = false };
+    };
+
+    return Value{ .number = num };
+}
+
+/// `string_split` splits a string by a delimiter into a list of strings.
+/// Syntax: (string-split str delim)
+pub fn string_split(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const str_val = args.items[0];
+    const delim_val = args.items[1];
+
+    if (str_val != .string) return ElzError.InvalidArgument;
+    if (delim_val != .string) return ElzError.InvalidArgument;
+
+    const str = str_val.string;
+    const delim = delim_val.string;
+
+    if (delim.len == 0) return ElzError.InvalidArgument;
+
+    // Build a list of substrings
+    var result: Value = Value.nil;
+    var temp_parts = std.ArrayListUnmanaged([]const u8){};
+    defer temp_parts.deinit(env.allocator);
+
+    var it = std.mem.splitSequence(u8, str, delim);
+    while (it.next()) |part| {
+        try temp_parts.append(env.allocator, part);
+    }
+
+    // Build the list in reverse order
+    var i = temp_parts.items.len;
+    while (i > 0) {
+        i -= 1;
+        const pair = try env.allocator.create(core.Pair);
+        pair.* = .{
+            .car = Value{ .string = try env.allocator.dupe(u8, temp_parts.items[i]) },
+            .cdr = result,
+        };
+        result = Value{ .pair = pair };
+    }
+
+    return result;
+}
+
+/// `make_string` creates a string of k characters.
+/// Syntax: (make-string k) or (make-string k char)
+pub fn make_string(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len < 1 or args.items.len > 2) return ElzError.WrongArgumentCount;
+
+    const k_val = args.items[0];
+    if (k_val != .number) return ElzError.InvalidArgument;
+
+    const k = k_val.number;
+    if (k < 0 or @floor(k) != k) return ElzError.InvalidArgument;
+
+    const length: usize = @intFromFloat(k);
+    const fill_char: u8 = if (args.items.len == 2) blk: {
+        const char_val = args.items[1];
+        if (char_val != .character) return ElzError.InvalidArgument;
+        if (char_val.character > 127) return ElzError.InvalidArgument; // ASCII only for simplicity
+        break :blk @intCast(char_val.character);
+    } else ' ';
+
+    const result = try env.allocator.alloc(u8, length);
+    @memset(result, fill_char);
+
+    return Value{ .string = result };
+}
+
+/// `string_eq` checks if two strings are equal.
+/// Syntax: (string=? str1 str2)
+pub fn string_eq(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const a = args.items[0];
+    const b = args.items[1];
+    if (a != .string or b != .string) return ElzError.InvalidArgument;
+    return Value{ .boolean = std.mem.eql(u8, a.string, b.string) };
+}
+
+/// `string_lt` checks if the first string is lexicographically less than the second.
+/// Syntax: (string<? str1 str2)
+pub fn string_lt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const a = args.items[0];
+    const b = args.items[1];
+    if (a != .string or b != .string) return ElzError.InvalidArgument;
+    const order = std.mem.order(u8, a.string, b.string);
+    return Value{ .boolean = order == .lt };
+}
+
+/// `string_gt` checks if the first string is lexicographically greater than the second.
+/// Syntax: (string>? str1 str2)
+pub fn string_gt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const a = args.items[0];
+    const b = args.items[1];
+    if (a != .string or b != .string) return ElzError.InvalidArgument;
+    const order = std.mem.order(u8, a.string, b.string);
+    return Value{ .boolean = order == .gt };
+}
+
+/// `string_le` checks if the first string is lexicographically less than or equal to the second.
+/// Syntax: (string<=? str1 str2)
+pub fn string_le(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const a = args.items[0];
+    const b = args.items[1];
+    if (a != .string or b != .string) return ElzError.InvalidArgument;
+    const order = std.mem.order(u8, a.string, b.string);
+    return Value{ .boolean = order != .gt };
+}
+
+/// `string_ge` checks if the first string is lexicographically greater than or equal to the second.
+/// Syntax: (string>=? str1 str2)
+pub fn string_ge(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    const a = args.items[0];
+    const b = args.items[1];
+    if (a != .string or b != .string) return ElzError.InvalidArgument;
+    const order = std.mem.order(u8, a.string, b.string);
+    return Value{ .boolean = order != .lt };
+}
+
+/// Counter for gensym
+var gensym_counter: u64 = 0;
+
+/// `gensym` generates a unique symbol.
+/// Syntax: (gensym) or (gensym prefix)
+pub fn gensym(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    const prefix = if (args.items.len >= 1) blk: {
+        const p = args.items[0];
+        if (p != .string and p != .symbol) return ElzError.InvalidArgument;
+        break :blk if (p == .string) p.string else p.symbol;
+    } else "g";
+
+    gensym_counter += 1;
+    var buf: [64]u8 = undefined;
+    const formatted = std.fmt.bufPrint(&buf, "{s}{d}", .{ prefix, gensym_counter }) catch return ElzError.OutOfMemory;
+
+    return Value{ .symbol = try env.allocator.dupe(u8, formatted) };
+}
+
 test "string primitives" {
     const allocator = std.testing.allocator;
     const testing = std.testing;

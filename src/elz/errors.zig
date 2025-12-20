@@ -50,4 +50,10 @@ pub const ElzError = error{
     ExecutionBudgetExceeded,
     /// A required primitive function was not found in the environment.
     MissingPrimitive,
+    /// A file was not found.
+    FileNotFound,
+    /// A file could not be written to.
+    FileNotWritable,
+    /// An I/O operation failed.
+    IOError,
 };

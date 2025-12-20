@@ -243,6 +243,89 @@ pub fn mod(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueLi
     return Value{ .number = @mod(args.items[0].number, args.items[1].number) };
 }
 
+/// `floor_fn` returns the largest integer not greater than the argument.
+pub fn floor_fn(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = @floor(args.items[0].number) };
+}
+
+/// `ceiling` returns the smallest integer not less than the argument.
+pub fn ceiling(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = @ceil(args.items[0].number) };
+}
+
+/// `round_fn` returns the closest integer to the argument.
+pub fn round_fn(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = @round(args.items[0].number) };
+}
+
+/// `truncate` returns the integer part of the argument, truncating toward zero.
+pub fn truncate(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = @trunc(args.items[0].number) };
+}
+
+/// `expt` returns the first argument raised to the power of the second.
+pub fn expt(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 2) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number or args.items[1] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = std.math.pow(f64, args.items[0].number, args.items[1].number) };
+}
+
+/// `exp_fn` returns e raised to the power of the argument.
+pub fn exp_fn(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .number = std.math.exp(args.items[0].number) };
+}
+
+/// `even_p` returns #t if the argument is even.
+pub fn even_p(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    const n = args.items[0].number;
+    if (@floor(n) != n) return Value{ .boolean = false };
+    const i: i64 = @intFromFloat(n);
+    return Value{ .boolean = @mod(i, 2) == 0 };
+}
+
+/// `odd_p` returns #t if the argument is odd.
+pub fn odd_p(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    const n = args.items[0].number;
+    if (@floor(n) != n) return Value{ .boolean = false };
+    const i: i64 = @intFromFloat(n);
+    return Value{ .boolean = @mod(i, 2) != 0 };
+}
+
+/// `zero_p` returns #t if the argument is zero.
+pub fn zero_p(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .boolean = args.items[0].number == 0 };
+}
+
+/// `positive_p` returns #t if the argument is positive.
+pub fn positive_p(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .boolean = args.items[0].number > 0 };
+}
+
+/// `negative_p` returns #t if the argument is negative.
+pub fn negative_p(_: *interpreter.Interpreter, _: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    if (args.items[0] != .number) return ElzError.InvalidArgument;
+    return Value{ .boolean = args.items[0].number < 0 };
+}
+
 test "math primitives" {
     const allocator = std.testing.allocator;
     const testing = std.testing;

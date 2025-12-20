@@ -86,11 +86,40 @@ fn writeWithDepth(value: Value, writer: anytype, depth: usize) !void {
             try writer.writeAll(")");
         },
         .closure => try writer.writeAll("#<closure>"),
+        .macro => |m| {
+            try writer.writeAll("#<macro:");
+            try writer.writeAll(m.name);
+            try writer.writeAll(">");
+        },
         .procedure => try writer.writeAll("#<procedure>"),
         .foreign_procedure => try writer.writeAll("#<foreign-procedure>"),
         .opaque_pointer => try writer.writeAll("#<opaque-pointer>"),
         .cell => try writer.writeAll("#<cell>"),
         .module => try writer.writeAll("#<module>"),
+        .vector => |v| {
+            try writer.writeAll("#(");
+            for (v.items, 0..) |item, i| {
+                if (i > 0) try writer.writeAll(" ");
+                try writeWithDepth(item, writer, depth + 1);
+            }
+            try writer.writeAll(")");
+        },
+        .hash_map => |hm| {
+            try writer.writeAll("#<hash-map:");
+            var buf: [32]u8 = undefined;
+            const count_str = std.fmt.bufPrint(&buf, "{d}", .{hm.count()}) catch "?";
+            try writer.writeAll(count_str);
+            try writer.writeAll(" entries>");
+        },
+        .port => |p| {
+            if (p.is_input) {
+                try writer.writeAll("#<input-port:");
+            } else {
+                try writer.writeAll("#<output-port:");
+            }
+            try writer.writeAll(p.name);
+            try writer.writeAll(">");
+        },
         .unspecified => try writer.writeAll("#<unspecified>"),
     }
 }
