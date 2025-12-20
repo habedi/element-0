@@ -40,6 +40,29 @@
 
 ;; --- Regression Tests ---
 
+;; Regression: Nested if TCO dangling pointer bug
+;; Previously, nested if expressions returned #<unspecified> instead of actual values
+;; due to evalIf setting current_ast to point to local stack variables
+(test-case "nested if returns correct value"
+  (= (if #t (if #t 42 0) 0) 42))
+
+(test-case "triple nested if"
+  (= (if #t (if #t (if #t 99 0) 0) 0) 99))
+
+(test-case "nested if with false branch"
+  (= (if #f 1 (if #f 2 (if #t 42 0))) 42))
+
+;; Regression: exit function validation
+;; Previously, exit with invalid codes caused panic instead of error
+(test-case "exit rejects negative codes"
+  (try (exit -1) (catch err #t)))
+
+(test-case "exit rejects codes > 255"
+  (try (exit 256) (catch err #t)))
+
+(test-case "exit rejects fractional codes"
+  (try (exit 1.5) (catch err #t)))
+
 ;; Regression: apply function memory leak
 ;; Tests that apply properly cleans up its internal ArrayList
 (test-case "apply with lambda"

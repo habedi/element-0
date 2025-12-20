@@ -20,15 +20,39 @@ pub fn Caster(comptime T: type) type {
         ///
         /// Returns:
         /// The casted value of type `T`, or `ElzError.InvalidArgument` if the `core.Value`
-        /// is of an incompatible type.
+        /// is of an incompatible type or out of range.
         pub fn cast(v: core.Value) ElzError!T {
             return switch (@typeInfo(T)) {
                 .float => switch (v) {
                     .number => |n| @floatCast(n),
                     else => ElzError.InvalidArgument,
                 },
-                .int => switch (v) {
-                    .number => |n| @intFromFloat(n),
+                .int => |int_info| switch (v) {
+                    .number => |n| {
+                        // Check for NaN or Infinity
+                        if (std.math.isNan(n) or std.math.isInf(n)) {
+                            return ElzError.InvalidArgument;
+                        }
+
+                        // Check for fractional part
+                        if (@floor(n) != n) {
+                            return ElzError.InvalidArgument;
+                        }
+
+                        // Calculate min/max for the target integer type
+                        const min_val: f64 = if (int_info.signedness == .signed)
+                            -@as(f64, @floatFromInt(@as(i128, 1) << int_info.bits - 1))
+                        else
+                            0;
+                        const max_val: f64 = @floatFromInt((@as(u128, 1) << int_info.bits) - 1);
+
+                        // Check bounds
+                        if (n < min_val or n > max_val) {
+                            return ElzError.InvalidArgument;
+                        }
+
+                        return @intFromFloat(n);
+                    },
                     else => ElzError.InvalidArgument,
                 },
                 else => @compileError("Unsupported type for FFI casting"),
