@@ -57,10 +57,11 @@ pub fn build(b: *std.Build) void {
         }
 
         gc.linkLibC();
-        gc.addIncludePath(b.path("external/bdwgc/include"));
+        // Use bdwgc from Zig dependencies
+        const bdwgc_dep = b.dependency("bdwgc", .{});
+        gc.addIncludePath(bdwgc_dep.path("include"));
         for (src_files.items) |src| {
-            const src_path = b.fmt("external/bdwgc/{s}", .{src});
-            gc.addCSourceFile(.{ .file = b.path(src_path), .flags = cflags.items });
+            gc.addCSourceFile(.{ .file = bdwgc_dep.path(src), .flags = cflags.items });
         }
     }
 
@@ -77,7 +78,9 @@ pub fn build(b: *std.Build) void {
         .name = "elz",
         .root_module = lib_module,
     });
-    lib.addIncludePath(b.path("external/bdwgc/include"));
+    // Use bdwgc from Zig dependencies
+    const bdwgc_dep_lib = b.dependency("bdwgc", .{});
+    lib.addIncludePath(bdwgc_dep_lib.path("include"));
     lib.linkLibrary(gc);
     lib.linkSystemLibrary("c");
     b.installArtifact(lib);
@@ -104,8 +107,9 @@ pub fn build(b: *std.Build) void {
 
     // --- Linenoise dependency (POSIX only) ---
     if (target.query.os_tag orelse .linux != .windows) {
-        repl_exe.addIncludePath(b.path("external/linenoise"));
-        repl_exe.addCSourceFile(.{ .file = b.path("external/linenoise/linenoise.c") });
+        const linenoise_dep = b.dependency("linenoise", .{});
+        repl_exe.addIncludePath(linenoise_dep.path(""));
+        repl_exe.addCSourceFile(.{ .file = linenoise_dep.path("linenoise.c") });
     }
     repl_exe.linkSystemLibrary("c");
 
@@ -145,7 +149,9 @@ pub fn build(b: *std.Build) void {
     const lib_unit_tests = b.addTest(.{
         .root_module = test_module,
     });
-    lib_unit_tests.addIncludePath(b.path("external/bdwgc/include"));
+    // Use bdwgc from Zig dependencies for tests
+    const bdwgc_dep_test = b.dependency("bdwgc", .{});
+    lib_unit_tests.addIncludePath(bdwgc_dep_test.path("include"));
     lib_unit_tests.linkLibrary(gc);
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);

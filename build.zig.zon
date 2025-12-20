@@ -3,9 +3,19 @@
     .version = "0.1.0-alpha.4",
     .fingerprint = 0xc8c56c5048e5528a, // Changing this has security and trust implications.
     .minimum_zig_version = "0.15.2",
-    .dependencies = .{ .chilli = .{
-        .url = "https://github.com/CogitatorTech/chilli/archive/v0.2.2.tar.gz",
-        .hash = "chilli-0.2.2-c19PrvIyAQAgsL0VkYCKq0DuxU7rZUpRuH991zsyOkYQ",
-    } },
-    .paths = .{ "build.zig", "build.zig.zon", "src", "external", "LICENSE", "README.md" },
+    .dependencies = .{
+        .chilli = .{
+            .url = "https://github.com/CogitatorTech/chilli/archive/v0.2.2.tar.gz",
+            .hash = "chilli-0.2.2-c19PrvIyAQAgsL0VkYCKq0DuxU7rZUpRuH991zsyOkYQ",
+        },
+        .bdwgc = .{
+            .url = "https://github.com/ivmai/bdwgc/archive/refs/heads/master.tar.gz",
+            .hash = "bdwgc-8.3.0-8obE-I-ULgDCD4fx03oanMA_7raEBnQ-xxopQ_IHIy5J",
+        },
+        .linenoise = .{
+            .url = "https://github.com/antirez/linenoise/archive/refs/heads/master.tar.gz",
+            .hash = "N-V-__8AAO4RAQBJwbmiKN_IJKHYhxzcw_bUFkCKLcl1dIr5",
+        },
+    },
+    .paths = .{ "build.zig", "build.zig.zon", "src", "LICENSE", "README.md" },
 }

@@ -79,11 +79,11 @@ You can add Elz to your project as a dependency and use it as a scripting engine
 Run the following command in the root directory of your project to add Elz as a dependency.
 
 ```sh
-zig fetch --save=elz "https://github.com/Element0Lang/element-0/archive/main.tar.gz"
+zig fetch --save=elz "https://github.com/Element0Lang/element-0/archive/<branch_or_tag>.tar.gz"
 ```
 
-This command downloads the latest development version of Elz.
-It adds it to Zig's global cache and updates your project's `build.zig.zon` file.
+Replace `<branch_or_tag>` with the desired branch or release tag, like `main` (for the development version) or `v0.1.0`.
+This command will download Elz and add it to Zig's global cache and update your project's `build.zig.zon` file.
 
 ##### Adding to Your Build Script
 
