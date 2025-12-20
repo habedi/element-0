@@ -6,12 +6,12 @@
 
 <h2>Element 0</h2>
 
-[![Tests](https://img.shields.io/github/actions/workflow/status/habedi/element-0/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/actions/workflows/tests.yml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/habedi/element-0/blob/main/LICENSE)
-[![Docs](https://img.shields.io/badge/docs-read-blue?style=flat&labelColor=282c34&logo=read-the-docs)](https://habedi.github.io/element-0/)
-[![Examples](https://img.shields.io/badge/examples-view-green?style=flat&labelColor=282c34&logo=zig)](https://github.com/habedi/element-0/tree/main/examples)
+[![Tests](https://img.shields.io/github/actions/workflow/status/Element0Lang/element-0/tests.yml?label=tests&style=flat&labelColor=282c34&logo=github)](https://github.com/Element0Lang/element-0/actions/workflows/tests.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-007ec6?label=license&style=flat&labelColor=282c34&logo=open-source-initiative)](https://github.com/Element0Lang/element-0/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-read-blue?style=flat&labelColor=282c34&logo=read-the-docs)](https://Element0Lang.github.io/element-0/)
+[![Examples](https://img.shields.io/badge/examples-view-green?style=flat&labelColor=282c34&logo=zig)](https://github.com/Element0Lang/element-0/tree/main/examples)
 [![Zig Version](https://img.shields.io/badge/Zig-0.15.2-orange?logo=zig&labelColor=282c34)](https://ziglang.org/download/)
-[![Release](https://img.shields.io/github/release/habedi/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/habedi/element-0/releases/latest)
+[![Release](https://img.shields.io/github/release/Element0Lang/element-0.svg?label=release&style=flat&labelColor=282c34&logo=github)](https://github.com/Element0Lang/element-0/releases/latest)
 
 A small embeddable Lisp for the Zig ecosystem λ
 
@@ -46,7 +46,7 @@ See the [ROADMAP.md](ROADMAP.md) for the list of implemented and planned feature
 
 > [!IMPORTANT]
 > This project is in early development, so bugs and breaking changes are expected.
-> Please use the [issues page](https://github.com/habedi/element-0/issues) to report bugs or request features.
+> Please use the [issues page](https://github.com/Element0Lang/element-0/issues) to report bugs or request features.
 
 ---
 
@@ -56,7 +56,7 @@ See the [ROADMAP.md](ROADMAP.md) for the list of implemented and planned feature
 
 1. Clone the repository
    ```sh
-   git clone https://github.com/habedi/element-0.git
+   git clone https://github.com/Element0Lang/element-0.git
    cd element-0
     ```
 
@@ -79,7 +79,7 @@ You can add Elz to your project as a dependency and use it as a scripting engine
 Run the following command in the root directory of your project to add Elz as a dependency.
 
 ```sh
-zig fetch --save=elz "https://github.com/habedi/element-0/archive/main.tar.gz"
+zig fetch --save=elz "https://github.com/Element0Lang/element-0/archive/main.tar.gz"
 ```
 
 This command downloads the latest development version of Elz.
@@ -191,7 +191,7 @@ Result of (zig-mul 7 6) is: 42
 
 ### Documentation
 
-You can find the full API documentation for the latest release of Elz [here](https://habedi.github.io/element-0/).
+You can find the full API documentation for the latest release of Elz [here](https://Element0Lang.github.io/element-0/).
 
 Alternatively, you can use the `make docs` command to generate the API documentation for the current version of
 Elz from the source code.
@@ -224,4 +224,4 @@ Element 0 is licensed under the Apache License, Version 2.0 (see [LICENSE](LICEN
 * The logo is made by [Conrad Barski, M.D.](https://www.lisperati.com/logo.html) with a few changes.
 * This project uses [linenoise](https://github.com/antirez/linenoise) and [bdwgc](https://github.com/bdwgc/bdwgc) C
   libraries.
-* This project uses the [Chilli](https://github.com/habedi/chilli) CLI framework.
+* This project uses the [Chilli](https://github.com/CogitatorTech/chilli) CLI framework.
