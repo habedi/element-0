@@ -76,6 +76,8 @@ It outlines the features to be implemented and their current status.
     * [x] `char->integer`, `integer->char`
 * **Vector Manipulation**
     * [x] `vector`, `make-vector`, `vector-ref`, `vector-set!`, `vector-length`, `vector?`, `list->vector`, `vector->list`
+* **Hash Map Manipulation**
+    * [x] `make-hash-map`, `hash-map-set!`, `hash-map-ref`, `hash-map-remove!`, `hash-map-contains?`, `hash-map-count`, `hash-map?`
 
 #### 2.4. Syntactic Extensions
 
@@ -100,7 +102,7 @@ It outlines the features to be implemented and their current status.
 
 * [x] **Math Library**: More common mathematical functions (like trigonometric and logarithmic functions).
 * [x] **List Utilities**: `filter`, `fold-left`, `fold-right`, and other common list processing functions.
-* [x] **String Utilities**: `string-append`, `string-ref`, `substring`, `string-split`, `number->string`, `string->number`, `make-string` implemented.
+* [x] **String Utilities**: `string-append`, `string-ref`, `substring`, `string-split`, `number->string`, `string->number`, `make-string`, `string=?`, `string<?`, `string>?`, `string<=?`, `string>=?`, `gensym` implemented.
 * [ ] **Regular Expressions**: A library for advanced text pattern matching.
 * [ ] **OS and Filesystem**: Procedures for file I/O, directory manipulation, and environment variables.
 * [ ] **Advanced I/O**: A `format` procedure and a more comprehensive port system.
