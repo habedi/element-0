@@ -30,9 +30,9 @@ It outlines the features to be implemented and their current status.
 * [x] Characters
 * [x] Strings
 * [x] Procedures (closures)
-* [ ] Vectors
-* [ ] Hash Maps
-* [ ] Ports
+* [x] Vectors
+* [x] Hash Maps
+* [x] Ports
 
 #### 2.2. Evaluation Semantics and Special Forms
 
@@ -45,7 +45,7 @@ It outlines the features to be implemented and their current status.
 * [x] `begin`
 * [x] `let`, `let*`, `letrec`
 * [x] `cond`
-* [ ] `case`
+* [x] `case`
 * [x] `and`
 * [x] `or`
 
@@ -54,33 +54,39 @@ It outlines the features to be implemented and their current status.
 * **Equivalence Predicates**
     * [x] `eq?`, `eqv?`, `equal?`
 * **Type Predicates**
-    * [x] `null?`, `boolean?`, `symbol?`, `number?`, `list?`
+    * [x] `null?`, `boolean?`, `symbol?`, `number?`, `list?`, `pair?`, `string?`
+    * [x] `procedure?`, `char?`, `integer?`, `not`
 * **Pair and List Manipulation**
-    * [x] `cons`, `car`, `cdr`
+    * [x] `cons`, `car`, `cdr`, `pair?`
     * [x] `list`, `length`, `append`, `reverse`, `map`
+    * [x] `list-ref`, `list-tail`, `memq`, `assq`
+    * [x] `set-car!`, `set-cdr!`
     * [x] `for-each`
 * **Numeric Operations**
     * [x] `+`, `-`, `*`, `/`
     * [x] `=`, `<`, `>`, `<=`, `>=`
-    * [x] `abs`
-    * [x] `sqrt`
-    * [x] `max`
-    * [x] `min`
+    * [x] `abs`, `sqrt`, `max`, `min`
+    * [x] `floor`, `ceiling`, `round`, `truncate`
+    * [x] `expt`, `exp`, `log`
+    * [x] `even?`, `odd?`, `zero?`, `positive?`, `negative?`
 * **Symbol Handling**
     * [x] `symbol->string`, `string->symbol`
 * **String and Character Manipulation**
-    * [x] `string-length`, `string-ref`, `char=?`
+    * [x] `string-length`, `string-ref`, `char=?`, `char<?`, `char>?`, `char<=?`, `char>=?`
+    * [x] `char->integer`, `integer->char`
 * **Vector Manipulation**
-    * [ ] `vector`, `make-vector`, `vector-ref`, `vector-set!`
+    * [x] `vector`, `make-vector`, `vector-ref`, `vector-set!`, `vector-length`, `vector?`, `list->vector`, `vector->list`
+* **Hash Map Manipulation**
+    * [x] `make-hash-map`, `hash-map-set!`, `hash-map-ref`, `hash-map-remove!`, `hash-map-contains?`, `hash-map-count`, `hash-map?`
 
 #### 2.4. Syntactic Extensions
 
-* [ ] `quasiquote` (` ` `), `unquote` (`,`), `unquote-splicing` (`,@`)
+* [x] `quasiquote` (`` ` ``), `unquote` (`,`), `unquote-splicing` (`,@`)
 
 #### 2.5. Advanced Control Flow
 
 * [x] `apply`
-* [ ] `eval`
+* [x] `eval`
 
 #### 2.6. I/O System
 
@@ -88,14 +94,15 @@ It outlines the features to be implemented and their current status.
 * [x] `display`
 * [x] `newline`
 * [x] `load`
-* [ ] `read`
-* [ ] `open-input-file`, `close-input-port`
+* [x] `read` (as `read-string`)
+* [x] `open-input-file`, `open-output-file`, `close-input-port`, `close-output-port`
+* [x] `read-line`, `read-char`, `write-port`, `input-port?`, `output-port?`, `eof-object?`
 
 ### 3. Expanded Standard Library
 
 * [x] **Math Library**: More common mathematical functions (like trigonometric and logarithmic functions).
 * [x] **List Utilities**: `filter`, `fold-left`, `fold-right`, and other common list processing functions.
-* [x] **String Utilities**: `string-append` implemented. Still needed: `substring`, `string-split`, etc.
+* [x] **String Utilities**: `string-append`, `string-ref`, `substring`, `string-split`, `number->string`, `string->number`, `make-string`, `string=?`, `string<?`, `string>?`, `string<=?`, `string>=?`, `gensym` implemented.
 * [ ] **Regular Expressions**: A library for advanced text pattern matching.
 * [ ] **OS and Filesystem**: Procedures for file I/O, directory manipulation, and environment variables.
 * [ ] **Advanced I/O**: A `format` procedure and a more comprehensive port system.
@@ -105,7 +112,8 @@ It outlines the features to be implemented and their current status.
 
 * [x] **Error Handling**: A mechanism for handling runtime errors, like `try/catch` or `with-handler`.
 * [x] **Module System**: A system for organizing code into reusable and encapsulated modules.
-* [ ] **Hygienic Macros**: A `syntax-rules` or similar system for compile-time metaprogramming.
+* [x] `define-macro` (simple procedural macros)
+* [ ] `syntax-rules` (hygienic macros) or similar system for compile-time metaprogramming.
 * [ ] `call-with-current-continuation` (`call/cc`): Support for first-class continuations.
 
 ### 5. Better Host Integration and Embeddability

@@ -8,6 +8,9 @@ const control = @import("./primitives/control.zig");
 const io = @import("./primitives/io.zig");
 const modules = @import("./primitives/modules.zig");
 const process = @import("./primitives/process.zig");
+const vectors = @import("./primitives/vectors.zig");
+const hashmaps = @import("./primitives/hashmaps.zig");
+const ports = @import("./primitives/ports.zig");
 const interpreter = @import("interpreter.zig");
 
 /// Populates the interpreter's root environment with mathematical primitive functions.
@@ -32,6 +35,17 @@ pub fn populate_math(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "max", core.Value{ .procedure = math.max });
     try interp.root_env.set(interp, "min", core.Value{ .procedure = math.min });
     try interp.root_env.set(interp, "%", core.Value{ .procedure = math.mod });
+    try interp.root_env.set(interp, "floor", core.Value{ .procedure = math.floor_fn });
+    try interp.root_env.set(interp, "ceiling", core.Value{ .procedure = math.ceiling });
+    try interp.root_env.set(interp, "round", core.Value{ .procedure = math.round_fn });
+    try interp.root_env.set(interp, "truncate", core.Value{ .procedure = math.truncate });
+    try interp.root_env.set(interp, "expt", core.Value{ .procedure = math.expt });
+    try interp.root_env.set(interp, "exp", core.Value{ .procedure = math.exp_fn });
+    try interp.root_env.set(interp, "even?", core.Value{ .procedure = math.even_p });
+    try interp.root_env.set(interp, "odd?", core.Value{ .procedure = math.odd_p });
+    try interp.root_env.set(interp, "zero?", core.Value{ .procedure = math.zero_p });
+    try interp.root_env.set(interp, "positive?", core.Value{ .procedure = math.positive_p });
+    try interp.root_env.set(interp, "negative?", core.Value{ .procedure = math.negative_p });
 }
 
 /// Populates the interpreter's root environment with list manipulation primitive functions.
@@ -47,6 +61,13 @@ pub fn populate_lists(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "append", core.Value{ .procedure = lists.append });
     try interp.root_env.set(interp, "reverse", core.Value{ .procedure = lists.reverse });
     try interp.root_env.set(interp, "map", core.Value{ .procedure = lists.map });
+    try interp.root_env.set(interp, "list-ref", core.Value{ .procedure = lists.list_ref });
+    try interp.root_env.set(interp, "list-tail", core.Value{ .procedure = lists.list_tail });
+    try interp.root_env.set(interp, "memq", core.Value{ .procedure = lists.memq });
+    try interp.root_env.set(interp, "assq", core.Value{ .procedure = lists.assq });
+    try interp.root_env.set(interp, "pair?", core.Value{ .procedure = lists.is_pair });
+    try interp.root_env.set(interp, "set-car!", core.Value{ .procedure = lists.set_car });
+    try interp.root_env.set(interp, "set-cdr!", core.Value{ .procedure = lists.set_cdr });
 }
 
 /// Populates the interpreter's root environment with predicate primitive functions.
@@ -65,6 +86,9 @@ pub fn populate_predicates(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "eq?", core.Value{ .procedure = predicates.is_eq });
     try interp.root_env.set(interp, "eqv?", core.Value{ .procedure = predicates.is_eqv });
     try interp.root_env.set(interp, "equal?", core.Value{ .procedure = predicates.is_equal });
+    try interp.root_env.set(interp, "char?", core.Value{ .procedure = predicates.is_char });
+    try interp.root_env.set(interp, "integer?", core.Value{ .procedure = predicates.is_integer });
+    try interp.root_env.set(interp, "not", core.Value{ .procedure = predicates.logical_not });
 }
 
 /// Populates the interpreter's root environment with string manipulation primitive functions.
@@ -77,6 +101,24 @@ pub fn populate_strings(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "string-length", core.Value{ .procedure = strings.string_length });
     try interp.root_env.set(interp, "string-append", core.Value{ .procedure = strings.string_append });
     try interp.root_env.set(interp, "char=?", core.Value{ .procedure = strings.char_eq });
+    try interp.root_env.set(interp, "char<?", core.Value{ .procedure = strings.char_lt });
+    try interp.root_env.set(interp, "char>?", core.Value{ .procedure = strings.char_gt });
+    try interp.root_env.set(interp, "char<=?", core.Value{ .procedure = strings.char_le });
+    try interp.root_env.set(interp, "char>=?", core.Value{ .procedure = strings.char_ge });
+    try interp.root_env.set(interp, "char->integer", core.Value{ .procedure = strings.char_to_integer });
+    try interp.root_env.set(interp, "integer->char", core.Value{ .procedure = strings.integer_to_char });
+    try interp.root_env.set(interp, "string-ref", core.Value{ .procedure = strings.string_ref });
+    try interp.root_env.set(interp, "substring", core.Value{ .procedure = strings.substring });
+    try interp.root_env.set(interp, "number->string", core.Value{ .procedure = strings.number_to_string });
+    try interp.root_env.set(interp, "string->number", core.Value{ .procedure = strings.string_to_number });
+    try interp.root_env.set(interp, "string-split", core.Value{ .procedure = strings.string_split });
+    try interp.root_env.set(interp, "make-string", core.Value{ .procedure = strings.make_string });
+    try interp.root_env.set(interp, "string=?", core.Value{ .procedure = strings.string_eq });
+    try interp.root_env.set(interp, "string<?", core.Value{ .procedure = strings.string_lt });
+    try interp.root_env.set(interp, "string>?", core.Value{ .procedure = strings.string_gt });
+    try interp.root_env.set(interp, "string<=?", core.Value{ .procedure = strings.string_le });
+    try interp.root_env.set(interp, "string>=?", core.Value{ .procedure = strings.string_ge });
+    try interp.root_env.set(interp, "gensym", core.Value{ .procedure = strings.gensym });
 }
 
 /// Populates the interpreter's root environment with control-related primitive functions.
@@ -85,6 +127,7 @@ pub fn populate_strings(interp: *interpreter.Interpreter) !void {
 /// - `interp`: A pointer to the interpreter instance.
 pub fn populate_control(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "apply", core.Value{ .procedure = control.apply });
+    try interp.root_env.set(interp, "eval", core.Value{ .procedure = control.eval_proc });
 }
 
 /// Populates the interpreter's root environment with I/O primitive functions.
@@ -96,6 +139,7 @@ pub fn populate_io(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "write", core.Value{ .procedure = io.write_proc });
     try interp.root_env.set(interp, "newline", core.Value{ .procedure = io.newline });
     try interp.root_env.set(interp, "load", core.Value{ .procedure = io.load });
+    try interp.root_env.set(interp, "read-string", core.Value{ .procedure = io.read_string });
 }
 
 /// Populates the interpreter's root environment with module-related primitive functions.
@@ -114,6 +158,35 @@ pub fn populate_process(interp: *interpreter.Interpreter) !void {
     try interp.root_env.set(interp, "exit", core.Value{ .procedure = process.exit });
 }
 
+/// Populates the interpreter's root environment with vector manipulation primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
+pub fn populate_vectors(interp: *interpreter.Interpreter) !void {
+    try interp.root_env.set(interp, "make-vector", core.Value{ .procedure = vectors.make_vector });
+    try interp.root_env.set(interp, "vector", core.Value{ .procedure = vectors.vector });
+    try interp.root_env.set(interp, "vector-length", core.Value{ .procedure = vectors.vector_length });
+    try interp.root_env.set(interp, "vector-ref", core.Value{ .procedure = vectors.vector_ref });
+    try interp.root_env.set(interp, "vector-set!", core.Value{ .procedure = vectors.vector_set });
+    try interp.root_env.set(interp, "vector?", core.Value{ .procedure = vectors.is_vector });
+    try interp.root_env.set(interp, "list->vector", core.Value{ .procedure = vectors.list_to_vector });
+    try interp.root_env.set(interp, "vector->list", core.Value{ .procedure = vectors.vector_to_list });
+}
+
+/// Populates the interpreter's root environment with hash map primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
+pub fn populate_hashmaps(interp: *interpreter.Interpreter) !void {
+    try interp.root_env.set(interp, "make-hash-map", core.Value{ .procedure = hashmaps.make_hash_map });
+    try interp.root_env.set(interp, "hash-map-set!", core.Value{ .procedure = hashmaps.hash_map_set });
+    try interp.root_env.set(interp, "hash-map-ref", core.Value{ .procedure = hashmaps.hash_map_get });
+    try interp.root_env.set(interp, "hash-map-remove!", core.Value{ .procedure = hashmaps.hash_map_remove });
+    try interp.root_env.set(interp, "hash-map-contains?", core.Value{ .procedure = hashmaps.hash_map_contains });
+    try interp.root_env.set(interp, "hash-map-count", core.Value{ .procedure = hashmaps.hash_map_count });
+    try interp.root_env.set(interp, "hash-map?", core.Value{ .procedure = hashmaps.is_hash_map });
+}
+
 /// Populates the interpreter's root environment with all primitive functions.
 ///
 /// Parameters:
@@ -127,6 +200,25 @@ pub fn populate_globals(interp: *interpreter.Interpreter) !void {
     try populate_io(interp);
     try populate_modules(interp);
     try populate_process(interp);
+    try populate_hashmaps(interp);
+}
+
+/// Populates the interpreter's root environment with port (file I/O) primitive functions.
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
+pub fn populate_ports(interp: *interpreter.Interpreter) !void {
+    try interp.root_env.set(interp, "open-input-file", core.Value{ .procedure = ports.open_input_file });
+    try interp.root_env.set(interp, "open-output-file", core.Value{ .procedure = ports.open_output_file });
+    try interp.root_env.set(interp, "close-input-port", core.Value{ .procedure = ports.close_input_port });
+    try interp.root_env.set(interp, "close-output-port", core.Value{ .procedure = ports.close_output_port });
+    try interp.root_env.set(interp, "read-line", core.Value{ .procedure = ports.read_line });
+    try interp.root_env.set(interp, "read-char", core.Value{ .procedure = ports.read_char });
+    try interp.root_env.set(interp, "write-port", core.Value{ .procedure = ports.write_to_port });
+    try interp.root_env.set(interp, "input-port?", core.Value{ .procedure = ports.is_input_port });
+    try interp.root_env.set(interp, "output-port?", core.Value{ .procedure = ports.is_output_port });
+    try interp.root_env.set(interp, "port?", core.Value{ .procedure = ports.is_port });
+    try interp.root_env.set(interp, "eof-object?", core.Value{ .procedure = ports.eof_object_p });
 }
 
 /// Defines a foreign function in the given environment.

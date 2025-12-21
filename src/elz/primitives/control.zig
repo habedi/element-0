@@ -45,6 +45,37 @@ pub fn apply(interp: *interpreter.Interpreter, env: *core.Environment, args: cor
     return eval.eval_proc(interp, proc, final_args, env, fuel);
 }
 
+/// `eval_proc` is the implementation of the `eval` primitive function.
+/// It evaluates an expression in a given environment.
+///
+/// Syntax: (eval expr) or (eval expr env)
+///
+/// Parameters:
+/// - `interp`: A pointer to the interpreter instance.
+/// - `env`: The current environment.
+/// - `args`: The arguments to `eval`, where the first argument is the expression
+///           to evaluate. An optional second argument specifies the environment.
+/// - `fuel`: A pointer to the execution fuel counter.
+///
+/// Returns:
+/// The result of evaluating the expression.
+pub fn eval_proc(interp: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, fuel: *u64) ElzError!core.Value {
+    if (args.items.len < 1 or args.items.len > 2) return ElzError.WrongArgumentCount;
+
+    const expr = args.items[0];
+
+    // Use provided environment or current environment
+    const eval_env = if (args.items.len == 2) blk: {
+        const env_arg = args.items[1];
+        // For now, we only support evaluating in the current environment
+        // A full implementation would need first-class environments
+        _ = env_arg;
+        break :blk env;
+    } else env;
+
+    return eval.eval(interp, &expr, eval_env, fuel);
+}
+
 test "control primitives" {
     const allocator = std.testing.allocator;
     const testing = std.testing;

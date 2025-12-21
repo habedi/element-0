@@ -149,6 +149,19 @@ pub const UserDefinedProc = struct {
     env: *Environment,
 };
 
+/// Represents a macro transformer in Element 0.
+/// Macros are procedures that transform code before evaluation.
+pub const Macro = struct {
+    /// The name of the macro (for error messages).
+    name: []const u8,
+    /// The parameter names of the macro transformer.
+    params: ValueList,
+    /// The body of the macro transformer.
+    body: Value,
+    /// The environment in which the macro was defined.
+    env: *Environment,
+};
+
 /// A pointer to a native Zig function that can be called from Elz.
 pub const PrimitiveFn = *const fn (interp: *interpreter.Interpreter, env: *Environment, args: ValueList, fuel: *u64) ElzError!Value;
 
@@ -158,6 +171,132 @@ pub const Pair = struct {
     car: Value,
     /// The second element of the pair (the "contents of the decrement register").
     cdr: Value,
+};
+
+/// Represents a vector (mutable fixed-size array) in Element 0.
+pub const Vector = struct {
+    /// The elements of the vector.
+    items: []Value,
+};
+
+/// Represents a hash map (key-value store) in Element 0.
+/// Keys are stored as string representations for hashing.
+pub const HashMap = struct {
+    /// The underlying hash map storage using string keys.
+    entries: std.StringHashMapUnmanaged(Value),
+    /// Allocator used for memory management.
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator) HashMap {
+        return .{
+            .entries = .{},
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: *HashMap) void {
+        self.entries.deinit(self.allocator);
+    }
+
+    pub fn put(self: *HashMap, key: []const u8, value: Value) !void {
+        // Check if key already exists to avoid duplicating keys
+        if (self.entries.contains(key)) {
+            // Key exists, just update value
+            self.entries.putAssumeCapacity(key, value);
+        } else {
+            // New key, need to duplicate
+            const owned_key = try self.allocator.dupe(u8, key);
+            try self.entries.put(self.allocator, owned_key, value);
+        }
+    }
+
+    pub fn get(self: *HashMap, key: []const u8) ?Value {
+        return self.entries.get(key);
+    }
+
+    pub fn remove(self: *HashMap, key: []const u8) bool {
+        const result = self.entries.fetchRemove(key);
+        return result != null;
+    }
+
+    pub fn count(self: *HashMap) usize {
+        return self.entries.count();
+    }
+};
+
+/// Represents a port (I/O stream) in Element 0.
+/// Ports can be input (for reading) or output (for writing).
+pub const Port = struct {
+    /// The underlying file handle.
+    file: std.fs.File,
+    /// Whether this is an input port (true) or output port (false).
+    is_input: bool,
+    /// Whether the port is open.
+    is_open: bool,
+    /// Name of the file (for error messages).
+    name: []const u8,
+
+    pub fn openInput(name: []const u8) !Port {
+        const file = try std.fs.cwd().openFile(name, .{});
+        return .{
+            .file = file,
+            .is_input = true,
+            .is_open = true,
+            .name = name,
+        };
+    }
+
+    pub fn openOutput(name: []const u8) !Port {
+        const file = try std.fs.cwd().createFile(name, .{});
+        return .{
+            .file = file,
+            .is_input = false,
+            .is_open = true,
+            .name = name,
+        };
+    }
+
+    pub fn close(self: *Port) void {
+        if (self.is_open) {
+            self.file.close();
+            self.is_open = false;
+        }
+    }
+
+    pub fn readLine(self: *Port, allocator: std.mem.Allocator) !?[]const u8 {
+        if (!self.is_input or !self.is_open) return null;
+        var buf: [4096]u8 = undefined;
+        var read_buf: [1]u8 = undefined;
+        var len: usize = 0;
+
+        while (len < buf.len - 1) {
+            const bytes_read = self.file.read(&read_buf) catch return null;
+            if (bytes_read == 0) {
+                // EOF
+                if (len == 0) return null;
+                break;
+            }
+            if (read_buf[0] == '\n') break;
+            buf[len] = read_buf[0];
+            len += 1;
+        }
+
+        if (len == 0) return null;
+        return try allocator.dupe(u8, buf[0..len]);
+    }
+
+    pub fn readChar(self: *Port) !?u8 {
+        if (!self.is_input or !self.is_open) return null;
+        var buf: [1]u8 = undefined;
+        const bytes_read = self.file.read(&buf) catch return null;
+        if (bytes_read == 0) return null;
+        return buf[0];
+    }
+
+    pub fn writeString(self: *Port, str: []const u8) !void {
+        if (self.is_input or !self.is_open) return error.InvalidPort;
+        _ = try self.file.write(str);
+    }
 };
 
 /// `Value` is the core data type in the Elz interpreter.
@@ -177,6 +316,8 @@ pub const Value = union(enum) {
     boolean: bool,
     /// A user-defined procedure (lambda).
     closure: *UserDefinedProc,
+    /// A macro transformer (define-macro).
+    macro: *Macro,
     /// A built-in (primitive) procedure.
     procedure: PrimitiveFn,
     /// A foreign function interface (FFI) procedure.
@@ -187,6 +328,12 @@ pub const Value = union(enum) {
     cell: *Cell,
     /// A module containing exported symbols.
     module: *Module,
+    /// A vector (mutable fixed-size array).
+    vector: *Vector,
+    /// A hash map (key-value store).
+    hash_map: *HashMap,
+    /// A port (file I/O stream).
+    port: *Port,
     /// The `nil` or empty list value.
     nil,
     /// An unspecified or void value.
@@ -220,7 +367,7 @@ pub const Value = union(enum) {
     pub fn deep_clone(self: Value, allocator: std.mem.Allocator) !Value {
         return switch (self) {
             .symbol => |s| Value{ .symbol = try allocator.dupe(u8, s) },
-            .number, .boolean, .character, .closure, .procedure, .foreign_procedure, .opaque_pointer, .cell, .module, .nil, .unspecified => self,
+            .number, .boolean, .character, .closure, .macro, .procedure, .foreign_procedure, .opaque_pointer, .cell, .module, .nil, .unspecified => self,
             .string => |s| Value{ .string = try allocator.dupe(u8, s) },
             .pair => |p| {
                 const new_pair = try allocator.create(Pair);
@@ -230,6 +377,17 @@ pub const Value = union(enum) {
                 };
                 return Value{ .pair = new_pair };
             },
+            .vector => |v| {
+                const new_vec = try allocator.create(Vector);
+                const new_items = try allocator.alloc(Value, v.items.len);
+                for (v.items, 0..) |item, i| {
+                    new_items[i] = try item.deep_clone(allocator);
+                }
+                new_vec.* = .{ .items = new_items };
+                return Value{ .vector = new_vec };
+            },
+            .hash_map => self, // Hash maps are not deep cloned (shared reference)
+            .port => self, // Ports are not deep cloned (shared reference)
         };
     }
 

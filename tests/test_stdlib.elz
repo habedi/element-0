@@ -129,6 +129,70 @@
 (test-case "module symbol not found"
   (equal? (try (module-ref test-mod 'non-existent) (catch err #t))
           #t))
+;; --- Hash Map Tests ---
+(test-case "make-hash-map" (hash-map? (make-hash-map)))
+(test-case "hash-map-set! and ref" 
+  (let ((h (make-hash-map)))
+    (hash-map-set! h "key" 42)
+    (equal? (hash-map-ref h "key") 42)))
+(test-case "hash-map-contains?" 
+  (let ((h (make-hash-map)))
+    (hash-map-set! h "x" 1)
+    (and (hash-map-contains? h "x") (not (hash-map-contains? h "y")))))
+(test-case "hash-map-count"
+  (let ((h (make-hash-map)))
+    (hash-map-set! h "a" 1)
+    (hash-map-set! h "b" 2)
+    (equal? (hash-map-count h) 2)))
+(test-case "hash-map-remove!"
+  (let ((h (make-hash-map)))
+    (hash-map-set! h "x" 1)
+    (hash-map-remove! h "x")
+    (not (hash-map-contains? h "x"))))
+
+;; --- String Comparison Tests ---
+(test-case "string=? equal" (string=? "hello" "hello"))
+(test-case "string=? not equal" (not (string=? "hello" "world")))
+(test-case "string<?" (string<? "abc" "abd"))
+(test-case "string>?" (string>? "abd" "abc"))
+(test-case "string<=?" (and (string<=? "abc" "abc") (string<=? "abc" "abd")))
+(test-case "string>=?" (and (string>=? "abc" "abc") (string>=? "abd" "abc")))
+
+;; --- Gensym Tests ---
+(test-case "gensym creates symbol" (symbol? (gensym)))
+(test-case "gensym with prefix" 
+  (let ((s (gensym "test")))
+    (symbol? s)))
+
+;; --- Additional Predicate Tests ---
+(test-case "char?" (and (char? #\a) (not (char? "a"))))
+(test-case "integer? number" (and (integer? 42) (integer? 3.0) (not (integer? 3.5))))
+(test-case "pair?" (and (pair? '(1 . 2)) (not (pair? '()))))
+
+;; --- Math Function Tests ---
+(test-case "floor" (equal? (floor 3.7) 3))
+(test-case "ceiling" (equal? (ceiling 3.2) 4))
+(test-case "round" (equal? (round 3.5) 4))
+(test-case "truncate" (equal? (truncate 3.7) 3))
+(test-case "expt" (equal? (expt 2 10) 1024))
+(test-case "even?" (and (even? 4) (not (even? 3))))
+(test-case "odd?" (and (odd? 3) (not (odd? 4))))
+(test-case "zero?" (and (zero? 0) (not (zero? 1))))
+(test-case "positive?" (and (positive? 5) (not (positive? -1))))
+(test-case "negative?" (and (negative? -5) (not (negative? 1))))
+
+;; --- List Function Tests ---
+(test-case "list-ref" (equal? (list-ref '(a b c d) 2) 'c))
+(test-case "list-tail" (equal? (list-tail '(a b c d) 2) '(c d)))
+(test-case "memq" (equal? (memq 'b '(a b c)) '(b c)))
+(test-case "memq not found" (equal? (memq 'z '(a b c)) #f))
+(test-case "assq" (equal? (assq 'b '((a 1) (b 2) (c 3))) '(b 2)))
+
+;; --- Character Function Tests ---
+(test-case "char<?" (char<? #\a #\b))
+(test-case "char>?" (char>? #\b #\a))
+(test-case "char->integer" (equal? (char->integer #\A) 65))
+(test-case "integer->char" (equal? (integer->char 65) #\A))
 
 ;; --- Run Summary ---
 (report-summary)

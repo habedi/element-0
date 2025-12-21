@@ -122,6 +122,25 @@ pub fn load(interp: *interpreter.Interpreter, env: *core.Environment, args: core
     return if (last_result == .unspecified) Value.unspecified else last_result;
 }
 
+/// `read_string` parses a single S-expression from a string.
+/// This is similar to R5RS `read`, but operates on strings.
+///
+/// Syntax: (read-string str)
+///
+/// Parameters:
+/// - `args`: A `ValueList` containing a string to parse.
+///
+/// Returns:
+/// The parsed S-expression as a Value, or an error if parsing fails.
+pub fn read_string(_: *interpreter.Interpreter, env: *core.Environment, args: core.ValueList, _: *u64) ElzError!Value {
+    if (args.items.len != 1) return ElzError.WrongArgumentCount;
+    const str_val = args.items[0];
+    if (str_val != .string) return ElzError.InvalidArgument;
+
+    const source = str_val.string;
+    return parser.read(source, env.allocator);
+}
+
 test "io primitives" {
     const allocator = std.testing.allocator;
     const testing = std.testing;
